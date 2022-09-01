@@ -5,9 +5,9 @@ from keboola.component.exceptions import UserException
 
 from linkedin import LinkedInClient, LinkedInClientException
 
-KEY_ORGANIZATION_ID = "organisation_id"
+KEY_ORGANIZATION_ID = "organization_id"
 
-REQUIRED_PARAMETERS = []
+REQUIRED_PARAMETERS = [KEY_ORGANIZATION_ID]
 REQUIRED_IMAGE_PARS = []
 
 
@@ -18,17 +18,21 @@ class Component(ComponentBase):
     def run(self) -> None:
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        params = self.configuration.parameters
+        params: dict = self.configuration.parameters
 
         access_token = self.get_access_token()
         client = LinkedInClient(access_token)
         organisation_id = params.get(KEY_ORGANIZATION_ID)
-        urn = f"urn:li:organization:{organisation_id}"
         try:
-            data = client.get_organization_page_statistics(urn)
+            data1 = client.get_organization_page_statistics(organisation_id)
+            print(data1)
         except LinkedInClientException as client_exc:
             raise UserException(client_exc) from client_exc
-        print(data)
+        try:
+            data2 = client.get_organization_acls()
+            print(data2)
+        except LinkedInClientException as client_exc:
+            raise UserException(client_exc) from client_exc
 
     def get_access_token(self) -> str:
         if "access_token" not in self.configuration.oauth_credentials["data"]:
