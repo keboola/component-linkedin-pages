@@ -8,7 +8,7 @@ import mock
 import os
 from freezegun import freeze_time
 
-from component import Component
+from component import LinkedInPagesExtractor
 
 
 class TestComponent(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestComponent(unittest.TestCase):
     @mock.patch.dict(os.environ, {'KBC_DATADIR': './non-existing-dir'})
     def test_run_no_cfg_fails(self):
         with self.assertRaises(ValueError):
-            comp = Component()
+            comp = LinkedInPagesExtractor()
             comp.run()
 
 
