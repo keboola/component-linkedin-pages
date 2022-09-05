@@ -2,6 +2,7 @@ import functools
 from typing import Callable, ParamSpec
 
 import requests
+from urllib.parse import quote
 
 from keboola.http_client import HttpClient
 
@@ -16,6 +17,7 @@ ENDPOINT_ORG_PAGE_STATS = "organizationPageStatistics"
 ENDPOINT_ORG_FOLLOWER_STATS = "organizationalEntityFollowerStatistics"
 
 ENDPOINT_POSTS = "posts"
+ENDPOINT_SOCIAL_ACTIONS = "socialActions"
 
 
 def auth_header(access_token: str):
@@ -88,6 +90,11 @@ class LinkedInClient(HttpClient):
         return self.get_raw(endpoint_path=ENDPOINT_ORG_FOLLOWER_STATS, params=params)
 
     @response_error_handling
-    def get_posts_by_author(self, author_urn: str, is_dsc: bool = False):
+    def get_posts_by_author(self, author_urn: str, is_dsc: bool = False):    # TODO: Handle pagination
         params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
         return self.get_raw(endpoint_path=ENDPOINT_POSTS, params=params)
+
+    @response_error_handling
+    def get_comments_on_post(self, post_urn: str):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/comments"
+        return self.get_raw(endpoint_path=url)

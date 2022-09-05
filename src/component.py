@@ -38,6 +38,11 @@ class LinkedInPagesExtractor(ComponentBase):
 
         posts = client.get_posts_by_author(author_urn=organization_urn(organisation_id))
 
+        for post in posts["elements"]:
+            post_urn = post["id"]
+            post_comments = client.get_comments_on_post(post_urn)
+            if post_comments["paging"]["total"] > 0:
+                break
         pass
 
     def get_access_token(self) -> str:
