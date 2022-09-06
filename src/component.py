@@ -3,7 +3,7 @@ import logging
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from linkedin import LinkedInClient, LinkedInClientException, organization_urn
+from linkedin import LinkedInClient, LinkedInClientException, organization_urn    # noqa
 
 KEY_ORGANIZATION_ID = "organization_id"
 
@@ -36,15 +36,13 @@ class LinkedInPagesExtractor(ComponentBase):
 
         # follower_stats = client.get_organization_follower_statistics(organisation_id)    # noqa
 
-        # post_page = client.get_posts_by_author(author_urn=organization_urn(organisation_id),
-        #                                        is_dsc=True,
-        #                                        start=10,
-        #                                        count=4)    # noqa
+        post_raw_page = client.get_posts_by_author(    # noqa
+            author_urn=organization_urn(organisation_id), is_dsc=True, start=10, count=4)
         posts = client.get_posts_by_author(author_urn=organization_urn(organisation_id), is_dsc=True)    # noqa
-
+        # posts_list = list(posts)
         for post in posts:
             post_urn = post["id"]
-            post_comments = client.get_comments_on_post(post_urn)
+            post_comments = list(client.get_comments_on_post(post_urn))
             if len(post_comments) > 0:
                 break
         pass

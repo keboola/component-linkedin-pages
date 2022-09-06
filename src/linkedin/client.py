@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, ParamSpec
+from typing import Callable, Dict, Iterator, List, ParamSpec
 
 import requests
 from urllib.parse import quote
@@ -84,11 +84,15 @@ class LinkedInClient(HttpClient):
                             ignore_auth=ignore_auth,
                             **kwargs)
 
-    def _get_all_elements_from_paginated_responses(self,
-                                                   count: int,
-                                                   start: int | None = None,
-                                                   params: dict = None,
-                                                   **kwargs):
+    def _handle_pagination(self,
+                           count: int,
+                           start: int | None = None,
+                           params: dict = None,
+                           **kwargs) -> Iterator[List[Dict]] | Dict:
+        """
+        If start is set (not None), returns the raw response JSON as Dict,
+        otherwise returns iterator over all elements.
+        """
         if params is None:
             params = dict()
         assert count > 0
@@ -98,18 +102,19 @@ class LinkedInClient(HttpClient):
             params["start"] = start
             return self.get(params=params, **kwargs)
         params["start"] = 0
-        all_elements = []
-        all_pages_handled = False
-        while not all_pages_handled:
-            next_page = self.get(params=params, **kwargs)
-            elements: list = next_page["elements"]
-            all_elements.extend(elements)
-            if len(elements) < count:
-                all_pages_handled = True
-            else:
-                params["start"] += count
 
-        return all_elements
+        def generator():
+            all_pages_handled = False
+            while not all_pages_handled:
+                next_page = self.get(params=params, **kwargs)
+                elements: List[Dict] = next_page["elements"]
+                yield from elements
+                if len(elements) < count:
+                    all_pages_handled = True
+                else:
+                    params["start"] += count
+
+        return generator()
 
     def get_administered_organization(self, organization_id: str | int):
         url = f"{ENDPOINT_ORG}/{organization_id}"
@@ -119,42 +124,33 @@ class LinkedInClient(HttpClient):
         params = {}
         if role:
             params["q"] = role
-        return self._get_all_elements_from_paginated_responses(endpoint_path=ENDPOINT_ORG_ACL,
-                                                               count=count,
-                                                               start=start,
-                                                               params=params)
+        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_ACL, count=count, start=start, params=params)
 
     def get_organization_page_statistics(self,
                                          organization_id: str | int,
                                          start: int | None = None,
                                          count: int | None = 10):
         params = {"q": "organization", "organization": organization_urn(organization_id)}
-        return self._get_all_elements_from_paginated_responses(endpoint_path=ENDPOINT_ORG_PAGE_STATS,
-                                                               count=count,
-                                                               start=start,
-                                                               params=params)
+        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_PAGE_STATS, count=count, start=start, params=params)
 
     def get_organization_follower_statistics(self,
                                              organization_id: str | int,
                                              start: int | None = None,
                                              count: int | None = 10):
         params = {"q": "organizationalEntity", "organizationalEntity": organization_urn(organization_id)}
-        return self._get_all_elements_from_paginated_responses(endpoint_path=ENDPOINT_ORG_FOLLOWER_STATS,
-                                                               count=count,
-                                                               start=start,
-                                                               params=params)
+        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_FOLLOWER_STATS,
+                                       count=count,
+                                       start=start,
+                                       params=params)
 
     def get_posts_by_author(self,
                             author_urn: str,
                             is_dsc: bool = False,
                             start: int | None = None,
-                            count: int | None = 10):
+                            count: int | None = 100):
         params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
-        return self._get_all_elements_from_paginated_responses(endpoint_path=ENDPOINT_POSTS,
-                                                               count=count,
-                                                               start=start,
-                                                               params=params)
+        return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
     def get_comments_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/comments"
-        return self._get_all_elements_from_paginated_responses(endpoint_path=url, count=count, start=start)
+        return self._handle_pagination(endpoint_path=url, count=count, start=start)
