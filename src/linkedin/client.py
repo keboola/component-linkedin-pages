@@ -19,6 +19,8 @@ ENDPOINT_ORG_FOLLOWER_STATS = "organizationalEntityFollowerStatistics"
 ENDPOINT_POSTS = "posts"
 ENDPOINT_SOCIAL_ACTIONS = "socialActions"
 
+ENDPOINT_SHARES = "shares"
+
 
 def auth_header(access_token: str):
     return {'Authorization': 'Bearer ' + access_token}
@@ -40,7 +42,8 @@ P = ParamSpec('P')
 
 
 def response_error_handling(api_call: Callable[P, requests.Response]) -> Callable[P, dict]:
-    """Function, that handles response handling of HTTP requests. The one from the library doesn't output all info.
+    """
+    Function, that handles response handling of HTTP requests. The one from the library doesn't output all info.
     """
     @wraps(api_call)
     def wrapper(*args, **kwargs):
@@ -50,7 +53,7 @@ def response_error_handling(api_call: Callable[P, requests.Response]) -> Callabl
         except requests.HTTPError as e:
             response: requests.Response = e.response
             orig_message: str = e.args[0]
-            if response.status_code in (401, 402, 403):
+            if response.status_code in (400, 401, 402, 403):
                 raise LinkedInClientException(orig_message +
                                               (f"\nResponse content: {response.text}" if response.text else "")) from e
             else:
@@ -151,6 +154,23 @@ class LinkedInClient(HttpClient):
         params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
+    def get_shares_by_owner(    # FIXME?: not working
+            self,
+            owner_urn: str,
+            shares_per_owner: int = 1000,
+            start: int | None = None,
+            count: int | None = 100):
+        params = {"q": "owners", "owners": f"List({owner_urn})", "sharesPerOwner": shares_per_owner}
+        return self._handle_pagination(endpoint_path=ENDPOINT_SHARES, count=count, start=start, params=params)
+
     def get_comments_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/comments"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
+
+    def get_likes_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/likes"
+        return self._handle_pagination(endpoint_path=url, count=count, start=start)
+
+    def get_social_action_summary_on_post(self, post_urn: str):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}"
+        return self.get(endpoint_path=url)

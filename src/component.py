@@ -36,15 +36,30 @@ class LinkedInPagesExtractor(ComponentBase):
 
         # follower_stats = client.get_organization_follower_statistics(organisation_id)    # noqa
 
-        post_raw_page = client.get_posts_by_author(    # noqa
-            author_urn=organization_urn(organisation_id), is_dsc=True, start=10, count=4)
+        # post_raw_page = client.get_posts_by_author(    # noqa
+        #     author_urn=organization_urn(organisation_id), is_dsc=True, start=10, count=4)
         posts = client.get_posts_by_author(author_urn=organization_urn(organisation_id), is_dsc=True)    # noqa
         # posts_list = list(posts)
         for post in posts:
             post_urn = post["id"]
+            post_social_actions_summary = client.get_social_action_summary_on_post(post_urn)
+            total_comments = post_social_actions_summary["commentsSummary"]["aggregatedTotalComments"]
+            total_likes = post_social_actions_summary["likesSummary"]["totalLikes"]
+            if total_comments + total_likes == 0:
+                continue
             post_comments = list(client.get_comments_on_post(post_urn))
-            if len(post_comments) > 0:
+            post_likes = list(client.get_likes_on_post(post_urn))
+            if len(post_comments) + len(post_likes) > 0:
                 break
+
+        # shares = client.get_shares_by_owner(owner_urn=organization_urn(organisation_id))    # noqa
+        # # posts_list = list(posts)
+        # for share in shares:
+        #     share_urn = share["id"]
+        #     share_comments = list(client.get_comments_on_post(share_urn))
+        #     share_likes = list(client.get_likes_on_post(share_urn))
+        #     if len(share_comments) + len(share_likes) > 0:
+        #         break
         pass
 
     def get_access_token(self) -> str:
