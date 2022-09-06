@@ -25,23 +25,27 @@ class LinkedInPagesExtractor(ComponentBase):
         access_token = self.get_access_token()
         client = LinkedInClient(access_token)
 
-        org_info = client.get_administered_organization(organisation_id)
+        # org_info = client.get_administered_organization(organisation_id)    # noqa
         # try:
-        #     org_acls = client.get_organization_acls("roleAssignee")
+        #     org_acls = client.get_organization_acls("roleAssignee")    # noqa
         #     # print(data2)
         # except LinkedInClientException as client_exc:
         #     raise UserException(client_exc) from client_exc
 
-        # page_stats = client.get_organization_page_statistics(organisation_id)
+        # page_stats = client.get_organization_page_statistics(organisation_id)    # noqa
 
-        # follower_stats = client.get_organization_follower_statistics(organisation_id)
+        # follower_stats = client.get_organization_follower_statistics(organisation_id)    # noqa
 
-        posts = client.get_posts_by_author(author_urn=organization_urn(organisation_id))
+        # post_page = client.get_posts_by_author(author_urn=organization_urn(organisation_id),
+        #                                        is_dsc=True,
+        #                                        start=10,
+        #                                        count=4)    # noqa
+        posts = client.get_posts_by_author(author_urn=organization_urn(organisation_id), is_dsc=True)    # noqa
 
-        for post in posts["elements"]:
+        for post in posts:
             post_urn = post["id"]
             post_comments = client.get_comments_on_post(post_urn)
-            if post_comments["paging"]["total"] > 0:
+            if len(post_comments) > 0:
                 break
         pass
 
