@@ -91,7 +91,7 @@ class LinkedInClient(HttpClient):
                            count: int,
                            start: int | None = None,
                            params: dict = None,
-                           **kwargs) -> Iterator[List[Dict]] | Dict:
+                           **kwargs) -> Iterator[Dict] | Dict:
         """
         If start is set (not None), returns the raw response JSON as Dict,
         otherwise returns iterator over all elements.
@@ -153,15 +153,6 @@ class LinkedInClient(HttpClient):
                             count: int | None = 100):
         params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
-
-    def get_shares_by_owner(    # FIXME?: not working
-            self,
-            owner_urn: str,
-            shares_per_owner: int = 1000,
-            start: int | None = None,
-            count: int | None = 100):
-        params = {"q": "owners", "owners": f"List({owner_urn})", "sharesPerOwner": shares_per_owner}
-        return self._handle_pagination(endpoint_path=ENDPOINT_SHARES, count=count, start=start, params=params)
 
     def get_comments_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/comments"
