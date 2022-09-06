@@ -15,6 +15,7 @@ ENDPOINT_ORG = "organizations"
 ENDPOINT_ORG_ACL = "organizationAcls"
 ENDPOINT_ORG_PAGE_STATS = "organizationPageStatistics"
 ENDPOINT_ORG_FOLLOWER_STATS = "organizationalEntityFollowerStatistics"
+ENDPOINT_ORG_SHARE_STATS = "organizationalEntityShareStatistics"
 
 ENDPOINT_POSTS = "posts"
 ENDPOINT_SOCIAL_ACTIONS = "socialActions"
@@ -132,19 +133,26 @@ class LinkedInClient(HttpClient):
     def get_organization_page_statistics(self,
                                          organization_id: str | int,
                                          start: int | None = None,
-                                         count: int | None = 10):
+                                         count: int | None = 10):    # TODO: add time bounds
         params = {"q": "organization", "organization": organization_urn(organization_id)}
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG_PAGE_STATS, count=count, start=start, params=params)
 
     def get_organization_follower_statistics(self,
                                              organization_id: str | int,
                                              start: int | None = None,
-                                             count: int | None = 10):
+                                             count: int | None = 10):    # TODO: add time bounds
         params = {"q": "organizationalEntity", "organizationalEntity": organization_urn(organization_id)}
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG_FOLLOWER_STATS,
                                        count=count,
                                        start=start,
                                        params=params)
+
+    def get_organization_share_statistics(self,
+                                          organization_id: str | int,
+                                          start: int | None = None,
+                                          count: int | None = 10):    # TODO: add time bounds
+        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn(organization_id)}
+        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_SHARE_STATS, count=count, start=start, params=params)
 
     def get_posts_by_author(self,
                             author_urn: str,
