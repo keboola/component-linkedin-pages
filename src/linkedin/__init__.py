@@ -1,1 +1,2 @@
-from .client import LinkedInClient, LinkedInClientException, organization_urn    # noqa
+from .client import LinkedInClient, LinkedInClientException    # noqa
+from .models import TimeIntervals, TimeGranularityType, TimeRange, organization_urn, URN    # noqa

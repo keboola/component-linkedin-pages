@@ -6,6 +6,8 @@ from urllib.parse import quote
 
 from keboola.http_client.http import HttpClient, Cookie
 
+from .models import URN, TimeIntervals, organization_urn
+
 BASE_URL = "https://api.linkedin.com"
 API_VERSION = "v2"
 
@@ -19,16 +21,11 @@ ENDPOINT_ORG_SHARE_STATS = "organizationalEntityShareStatistics"
 
 ENDPOINT_POSTS = "posts"
 ENDPOINT_SOCIAL_ACTIONS = "socialActions"
-
-ENDPOINT_SHARES = "shares"
+ENDPOINT_REACTIONS = "reactions"
 
 
 def auth_header(access_token: str):
     return {'Authorization': 'Bearer ' + access_token}
-
-
-def organization_urn(id: str | int):
-    return f"urn:li:organization:{id}"
 
 
 def bool_param_string(val: bool):
@@ -124,6 +121,10 @@ class LinkedInClient(HttpClient):
         url = f"{ENDPOINT_ORG}/{organization_id}"
         return self.get(endpoint_path=url)
 
+    def get_organization_by_vanity_name(self, vanity_name: str, start: int | None = None, count: int | None = 10):
+        params = {"q": "vanityName", "vanityName": vanity_name}
+        return self._handle_pagination(endpoint_path=ENDPOINT_ORG, params=params, count=count, start=start)
+
     def get_organization_acls(self, role: str | None = None, start: int | None = None, count: int | None = 10):
         params = {}
         if role:
@@ -131,28 +132,61 @@ class LinkedInClient(HttpClient):
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG_ACL, count=count, start=start, params=params)
 
     def get_organization_page_statistics(self,
-                                         organization_id: str | int,
+                                         organization_urn: URN,
+                                         time_intervals: TimeIntervals | None = None,
                                          start: int | None = None,
-                                         count: int | None = 10):    # TODO: add time bounds
-        params = {"q": "organization", "organization": organization_urn(organization_id)}
-        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_PAGE_STATS, count=count, start=start, params=params)
+                                         count: int | None = 1000):
+        assert organization_urn.entity_type == "organization"
+        params = {"q": "organization", "organization": str(organization_urn)}
+        # Cannot do this commented out sensible thing:
+        # if time_intervals is not None:
+        #     params["timeIntervals"] = time_intervals.to_url_string()
+        # I must do this to prevent URL encoding instead:
+        url = f"{ENDPOINT_ORG_PAGE_STATS}?timeIntervals={time_intervals.to_url_string()}"
+        # Need to ensure count is strictly larger than the expected count of elements due to API bug:
+        if count <= time_intervals.amount:
+            count = time_intervals.amount + 1
+        return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
     def get_organization_follower_statistics(self,
-                                             organization_id: str | int,
+                                             organization_urn_or_id: str | int,
+                                             time_intervals: TimeIntervals | None = None,
                                              start: int | None = None,
-                                             count: int | None = 10):    # TODO: add time bounds
-        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn(organization_id)}
-        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_FOLLOWER_STATS,
-                                       count=count,
-                                       start=start,
-                                       params=params)
+                                             count: int | None = 10):
+        if not isinstance(organization_urn_or_id, str):
+            organization_urn_or_id = organization_urn(organization_urn_or_id)
+        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn_or_id}
+        # Cannot do this commented out sensible thing:
+        # if time_intervals is not None:
+        #     params["timeIntervals"] = time_intervals.to_url_string()
+        # I must do this to prevent URL encoding instead:
+        url = f"{ENDPOINT_ORG_FOLLOWER_STATS}?timeIntervals={time_intervals.to_url_string()}"
+        # Need to ensure count is strictly larger than the expected count of elements due to API bug:
+        if count <= time_intervals.amount:
+            count = time_intervals.amount + 1
+        return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
     def get_organization_share_statistics(self,
-                                          organization_id: str | int,
+                                          organization_urn_or_id: str | int,
+                                          time_intervals: TimeIntervals | None = None,
                                           start: int | None = None,
-                                          count: int | None = 10):    # TODO: add time bounds
-        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn(organization_id)}
-        return self._handle_pagination(endpoint_path=ENDPOINT_ORG_SHARE_STATS, count=count, start=start, params=params)
+                                          count: int | None = 10):
+        if not isinstance(organization_urn_or_id, str):
+            organization_urn_or_id = organization_urn(organization_urn_or_id)
+        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn_or_id}
+        # Cannot do this commented out sensible thing:
+        # if time_intervals is not None:
+        #     params["timeIntervals"] = time_intervals.to_url_string()
+        # I must do this to prevent URL encoding instead:
+        url = f"{ENDPOINT_ORG_SHARE_STATS}?timeIntervals={time_intervals.to_url_string()}"
+        # Need to ensure count is strictly larger than the expected count of elements due to API bug:
+        if count <= time_intervals.amount:
+            count = time_intervals.amount + 1
+        return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
+
+    def get_post_by_urn(self, post_urn: str):
+        url = f"{ENDPOINT_POSTS}/{quote(post_urn)}"
+        return self.get(endpoint_path=url)
 
     def get_posts_by_author(self,
                             author_urn: str,
@@ -169,6 +203,11 @@ class LinkedInClient(HttpClient):
     def get_likes_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/likes"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
+
+    # def get_reactions_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):    # FIXME?
+    #     url = f"{ENDPOINT_REACTIONS}/{quote(post_urn)}"
+    #     params = {"q": "entity"}
+    #     return self._handle_pagination(endpoint_path=url, params=params, count=count, start=start)
 
     def get_social_action_summary_on_post(self, post_urn: str):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}"
