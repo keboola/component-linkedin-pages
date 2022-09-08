@@ -1,47 +1,70 @@
-from datetime import datetime
+from enum import Enum, unique
 import logging
-from itertools import chain    # noqa
-from copy import deepcopy
+from typing import Iterator, Tuple
 
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from linkedin import (    # noqa
-    LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange)
+from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange)
 
+from data_processing import process_stat_element
+
+# Global config keys:
 KEY_ORGANIZATION_IDS = "organization_ids"
-# KEY_ORGANIZATION_VANITY_NAME = "organization_vanity_name"
+
+# Row config keys:
+KEY_EXTRACTION_TARGET = "extraction_target"
 KEY_TIME_RANGE = "time_range"
 
-REQUIRED_PARAMETERS = []
+REQUIRED_PARAMETERS = [KEY_EXTRACTION_TARGET]
 REQUIRED_IMAGE_PARS = []
 
 
-def process_stat_element(page_stat: dict):
-    page_stat = deepcopy(page_stat)
-    page_stat["timeRange"] = TimeRange.from_api_dict(page_stat["timeRange"]).to_serializable_dict()
-    return page_stat
+# Row config enums:
+@unique
+class ExtractionTarget(Enum):
+    PAGE_STATS = "Page statistics"
+    FOLLOWER_STATS = "Follower statistics"
+    SHARE_STATS = "Share statistics"
+    POSTS = "Posts"
+    ENUMS = "Enumerated types"
+
+
+STATS_EXTRACTION_TARGETS = (ExtractionTarget.PAGE_STATS, ExtractionTarget.FOLLOWER_STATS, ExtractionTarget.SHARE_STATS)
+
+# Other hardcoded constants:
+STATISTICS_REPORT_GRANULARITY = TimeGranularityType.DAY
 
 
 class LinkedInPagesExtractor(ComponentBase):
-    # def __init__(self):
-    #     super().__init__()
-
     def run(self) -> None:
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
         params: dict = self.configuration.parameters
+        self.extraction_target = ExtractionTarget(params[KEY_EXTRACTION_TARGET])
         organization_ids: list[int] | None = params.get(KEY_ORGANIZATION_IDS)
         time_range: dict | None = params.get(KEY_TIME_RANGE)
-        # if not organization_ids:
-        #     organization_vanity_name = params.get(KEY_ORGANIZATION_VANITY_NAME)
-        #     if not organization_vanity_name:
-        #         raise UserException("Either organization ID or organization vanity name has to be specified.")
 
         access_token = self.get_access_token()
         self.client = LinkedInClient(access_token)
 
+        organization_urns = self.get_organization_urns(organization_ids)
+
+        if time_range:
+            self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
+                                                time_range=TimeRange.from_config_dict(time_range))
+        else:
+            self.time_intervals = None
+
+        if self.extraction_target in STATS_EXTRACTION_TARGETS:
+            org_stats_gen = self.get_all_statistics_data(organization_urns=organization_urns)
+            org_stats = {urn: list(stats) for urn, stats in org_stats_gen}    # noqa
+        else:
+            raise NotImplementedError("Only organization statistics extraction targets are implemented.")
+        pass
+
+    def get_organization_urns(self, organization_ids: list[int]):
         if organization_ids:
             organization_urns = [URN(entity_type="organization", id=id) for id in organization_ids]
         else:
@@ -50,94 +73,29 @@ class LinkedInPagesExtractor(ComponentBase):
             except LinkedInClientException as client_exc:
                 raise UserException(client_exc) from client_exc
             organization_urns = [URN.from_str(org_acl["organization"]) for org_acl in organization_acls]
+        return organization_urns
 
-        if time_range:
-            time_intervals = TimeIntervals(time_granularity_type=TimeGranularityType.DAY,
-                                           time_range=TimeRange.from_config_dict(time_range))
+    def get_all_statistics_data(self, organization_urns: list[URN]) -> Iterator[Tuple[URN, Iterator[dict]]]:
+        return ((organization_urn, self.get_statistics_data_for_organization(organization_urn=organization_urn))
+                for organization_urn in organization_urns)
+
+    def get_statistics_data_for_organization(self, organization_urn: URN) -> Iterator[dict]:
+        assert hasattr(self, "extraction_target")
+        assert hasattr(self, "time_intervals")
+        if self.extraction_target is ExtractionTarget.PAGE_STATS:
+            linked_in_client_method = self.client.get_organization_page_statistics
+        elif self.extraction_target is ExtractionTarget.FOLLOWER_STATS:
+            linked_in_client_method = self.client.get_organization_follower_statistics
+        elif self.extraction_target is ExtractionTarget.SHARE_STATS:
+            linked_in_client_method = self.client.get_organization_share_statistics
         else:
-            time_intervals = None
-        org_page_stats = {    #  Maybe use generator of tuples instead # noqa
-            organization_urn: self.fetch_organization_page_stats(organization_urn=organization_urn,
-                                                                 time_intervals=time_intervals)
-            for organization_urn in organization_urns
-        }
-        pass
+            raise ValueError(f"Invalid extraction target: {self.extraction_target}")
 
-    def fetch_organization_page_stats(self,
-                                      organization_urn: URN,
-                                      time_intervals: TimeIntervals | None = None) -> list[dict]:
         try:
-            return [
-                process_stat_element(page_stat)
-                for page_stat in self.client.get_organization_page_statistics(organization_urn,
-                                                                              time_intervals=time_intervals)
-            ]
+            return (process_stat_element(page_stat, organization_urn)
+                    for page_stat in linked_in_client_method(organization_urn, time_intervals=self.time_intervals))
         except LinkedInClientException as client_exc:
             raise UserException(client_exc) from client_exc
-        # try:
-        #     page_stats = [    # noqa
-        #         process_stat_element(page_stat)
-        #         for page_stat in client.get_organization_page_statistics(organization_ids,
-        #                                                                  time_intervals=time_intervals)
-        #     ]
-        #     follower_stats = [    # noqa
-        #         process_stat_element(page_stat)
-        #         for page_stat in client.get_organization_follower_statistics(organization_ids,
-        #                                                                      time_intervals=time_intervals)
-        #     ]
-        #     share_stats = [    # noqa
-        #         process_stat_element(page_stat)
-        #         for page_stat in client.get_organization_share_statistics(organization_ids,
-        #                                                                   time_intervals=time_intervals)
-        #     ]
-        # except LinkedInClientException as client_exc:
-        #     raise UserException(client_exc) from client_exc
-
-        # posts = chain(client.get_posts_by_author(author_urn=organization_urn(organization_id), is_dsc=False),
-        #               client.get_posts_by_author(author_urn=organization_urn(organization_id), is_dsc=True))
-        # # posts_list = list(posts)
-        # for post in posts:
-        #     post_urn = post["id"]
-        #     post_social_actions_summary = client.get_social_action_summary_on_post(post_urn)
-        #     total_comments = post_social_actions_summary["commentsSummary"]["aggregatedTotalComments"]
-        #     total_likes = post_social_actions_summary["likesSummary"]["totalLikes"]
-        #     if total_comments == 0 or total_likes == 0:
-        #         continue
-        #     post_comments = list(client.get_comments_on_post(post_urn))
-        #     post_likes = list(client.get_likes_on_post(post_urn))
-        #     if len(post_comments) > 0 and len(post_likes) > 0:
-        #         break
-
-        # if not organization_ids:
-        #     organization_infos = list(client.get_organization_by_vanity_name(vanity_name=organization_vanity_name))
-        #     if len(organization_infos) != 1:
-        #         raise UserException("Organization with the specified vanity name was not found.")
-        #     organization_info = organization_infos[0]
-        #     organization_ids = organization_info["id"]
-
-        # org_info = client.get_administered_organization(organization_id)    # noqa
-        # try:
-        #     org_acls = client.get_organization_acls("roleAssignee")    # noqa
-        #     # print(data2)
-        # except LinkedInClientException as client_exc:
-        #     raise UserException(client_exc) from client_exc
-
-        # page_stats = list(client.get_organization_page_statistics(organization_id))    # noqa
-
-        # follower_stats = list(client.get_organization_follower_statistics(organization_id))    # noqa
-
-        # share_stats = list(client.get_organization_share_statistics(organization_id))    # noqa
-
-        # post_raw_page = client.get_posts_by_author(    # noqa
-        #     author_urn=organization_urn(organization_id), is_dsc=True, start=10, count=4)
-
-        # post_with_likes_urn = 'urn:li:share:6367102219933806592'
-        # post_with_comments_and_likes_urn = 'urn:li:share:6861468431473025024'
-        # post = client.get_post_by_urn(post_with_comments_and_likes_urn)
-        # post_comments = list(client.get_comments_on_post(post_with_comments_and_likes_urn))
-        # post_likes = list(client.get_likes_on_post(post_with_comments_and_likes_urn))
-        # post_reactions = list(client.get_reactions_on_post(post_with_comments_and_likes_urn))
-        # pass
 
     def get_access_token(self) -> str:
         if "access_token" not in self.configuration.oauth_credentials["data"]:
