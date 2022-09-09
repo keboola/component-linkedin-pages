@@ -58,8 +58,11 @@ class LinkedInPagesExtractor(ComponentBase):
         organization_urns = self.get_organization_urns(organization_ids)
 
         if time_range:
-            self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
-                                                time_range=TimeRange.from_config_dict(time_range))
+            try:
+                self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
+                                                    time_range=TimeRange.from_config_dict(time_range))
+            except ValueError as ve:
+                raise UserException(f"Invalid time range provided. {ve.args[0]}") from ve
         else:
             self.time_intervals = None
 

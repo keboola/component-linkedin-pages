@@ -52,6 +52,11 @@ class TimeRange:
     start: datetime
     end: datetime
 
+    def __post_init__(self):
+        if self.start > self.end:
+            raise ValueError(f"Start value must be earlier than or concurrent with end value."
+                             f" Resultant datetimes: {self.to_serializable_dict()}")
+
     def to_url_string(self) -> str:
         return (f"(start:{datetime_to_milliseconds_since_epoch(self.start)},"
                 f"end:{datetime_to_milliseconds_since_epoch(self.end)})")
