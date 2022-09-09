@@ -1,1 +1,17 @@
-{}
+{
+    "type": "object",
+    "title": "LinkedIn pages extractor configuration",
+    "required": [],
+    "properties": {
+        "organization_ids": {
+            "title": "Organizaton IDs",
+            "desription": "IDs of the organizations, about which you want to download data. Leave empty if you want to download data about all available organizations.",
+            "type": "array",
+            "items": {
+                "title": "Organization ID",
+                "type": "integer",
+                "minimum": 0
+            }
+        }
+    }
+}
