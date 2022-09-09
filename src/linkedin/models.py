@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import Enum, unique
 import math
 
 import dateparser
@@ -41,6 +41,7 @@ def milliseconds_since_epoch_to_datetime(milliseconds_since_epoch: int) -> datet
     return datetime.fromtimestamp(milliseconds_since_epoch / 1000.0)
 
 
+@unique
 class TimeGranularityType(Enum):
     DAY = "DAY"
     MONTH = "MONTH"
@@ -65,7 +66,10 @@ class TimeRange:
         return cls(start=dateparser.parse(d["start"]), end=dateparser.parse(d["end"]))
 
     def to_serializable_dict(self):
-        return {"start": self.start.isoformat(timespec="seconds"), "end": self.end.isoformat(timespec="seconds")}
+        return {
+            "start": self.start.isoformat(timespec="seconds") + "Z",
+            "end": self.end.isoformat(timespec="seconds") + "Z"
+        }
 
     @property
     def length_in_days(self):

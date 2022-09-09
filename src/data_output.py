@@ -16,17 +16,18 @@ class Table:
     metadata: TableMetadata | None = None
     delete_where_spec: dict | None = None
 
-
-def save_as_csv_with_manifest(table: Table, component: ComponentBase, incremental: bool):
-    table_def = component.create_out_table_definition(name=f"{table.name}.csv",
-                                                      is_sliced=False,
-                                                      primary_key=table.primary_key,
-                                                      columns=table.columns,
-                                                      incremental=incremental,
-                                                      table_metadata=table.metadata,
-                                                      delete_where=table.delete_where_spec)
-    os.makedirs(component.tables_out_path, exist_ok=True)
-    with open(os.path.join(component.tables_out_path, table_def.name), "w") as f:
-        csv_writer = csv.DictWriter(f, dialect='kbc', fieldnames=table_def.columns)
-        csv_writer.writerows(table.records)
-    component.write_manifest(table_def)
+    def save_as_csv_with_manifest(self, component: ComponentBase, incremental: bool, include_csv_header: bool = False):
+        table_def = component.create_out_table_definition(name=f"{self.name}.csv",
+                                                          is_sliced=False,
+                                                          primary_key=self.primary_key,
+                                                          columns=self.columns,
+                                                          incremental=incremental,
+                                                          table_metadata=self.metadata,
+                                                          delete_where=self.delete_where_spec)
+        os.makedirs(component.tables_out_path, exist_ok=True)
+        with open(os.path.join(component.tables_out_path, table_def.name), "w") as f:
+            csv_writer = csv.DictWriter(f, dialect='kbc', fieldnames=table_def.columns)
+            if include_csv_header:
+                csv_writer.writeheader()
+            csv_writer.writerows(self.records)
+        component.write_manifest(table_def)
