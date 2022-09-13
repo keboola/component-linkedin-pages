@@ -61,6 +61,7 @@ class LinkedInPagesExtractor(ComponentBase):
             try:
                 self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
                                                     time_range=TimeRange.from_config_dict(time_range))
+                logging.info(f"Specified time range parsed to {self.time_intervals.time_range}")
             except ValueError as ve:
                 raise UserException(f"Invalid time range provided. {ve.args[0]}") from ve
         else:

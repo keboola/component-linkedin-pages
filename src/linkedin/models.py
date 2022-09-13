@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum, unique
 import math
 
@@ -37,8 +37,14 @@ def datetime_to_milliseconds_since_epoch(dt: datetime) -> int:
     return round(dt.timestamp() * 1000)
 
 
-def milliseconds_since_epoch_to_datetime(milliseconds_since_epoch: int) -> datetime:
-    return datetime.fromtimestamp(milliseconds_since_epoch / 1000.0)
+def milliseconds_since_epoch_to_datetime(milliseconds_since_epoch: int, tz: timezone = timezone.utc) -> datetime:
+    return datetime.fromtimestamp(milliseconds_since_epoch / 1000.0, tz=tz)
+
+
+def parse_date_from_string(s: str):
+    dt = dateparser.parse(s)
+    tz = dt.tzinfo or timezone.utc
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0, fold=0, tzinfo=tz)
 
 
 @unique
@@ -68,13 +74,13 @@ class TimeRange:
 
     @classmethod
     def from_config_dict(cls, d: dict):
-        return cls(start=dateparser.parse(d["start"]), end=dateparser.parse(d["end"]))
+        return cls(start=parse_date_from_string(d["start"]), end=parse_date_from_string(d["end"]))
 
     def to_serializable_dict(self):
-        return {
-            "start": self.start.isoformat(timespec="seconds") + "Z",
-            "end": self.end.isoformat(timespec="seconds") + "Z"
-        }
+        return {"start": self.start.isoformat(timespec="seconds"), "end": self.end.isoformat(timespec="seconds")}
+
+    def __str__(self):
+        return str(self.to_serializable_dict())
 
     @property
     def length_in_days(self):
