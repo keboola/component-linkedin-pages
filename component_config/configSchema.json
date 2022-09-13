@@ -11,7 +11,8 @@
                 "title": "Organization ID",
                 "type": "integer",
                 "minimum": 0
-            }
+            },
+            "propertyOrder": 1
         }
     }
 }

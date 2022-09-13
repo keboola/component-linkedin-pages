@@ -10,7 +10,8 @@
             "title": "Incremental loading",
             "description": "Check if you want to use incremental loading of data into Keboola storage.",
             "type": "boolean",
-            "format": "checkbox"
+            "format": "checkbox",
+            "propertyOrder": 1
         },
         "extraction_target": {
             "title": "Extraction target",
@@ -22,20 +23,24 @@
                 "Share statistics",
                 "Posts",
                 "Enumerated types"
-            ]
+            ],
+            "propertyOrder": 2
         },
         "time_range": {
             "title": "Time range",
             "description": "Time range can either be unspecified (null), then all time statistics will be downloaded, otherwise it determines the time range of the data.",
+            "propertyOrder": 3,
+            "default": {
+                "start": "7 days ago",
+                "end": "today"
+            },
             "oneOf": [
                 {
                     "title": "Unspecified time range",
-                    "description": "All time statistics will be downloaded.",
                     "type": "null"
                 },
                 {
                     "title": "Specified time range",
-                    "description": "Statistics for each day contained in the time range will be downloaded. As for granularity, daily (delimited by UTC midnight) is always used.",
                     "type": "object",
                     "required": [
                         "start",
@@ -45,12 +50,14 @@
                         "start": {
                             "title": "Start",
                             "description": "Start of the time range. Can either be a specific datetime or relative expression such as '7 days ago', '1 year ago', etc.",
-                            "type": "string"
+                            "type": "string",
+                            "propertyOrder": 1
                         },
                         "end": {
                             "title": "End",
                             "description": "End of the time range. Can either be a specific datetime or relative expression such as 'now', '1 day ago', etc.",
-                            "type": "string"
+                            "type": "string",
+                            "propertyOrder": 2
                         }
                     }
                 }

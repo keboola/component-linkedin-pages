@@ -1,4 +1,5 @@
 [
     "genericDockerUI",
-    "genericDockerUI-rows"
+    "genericDockerUI-rows",
+    "genericDockerUI-authorization"
 ]
