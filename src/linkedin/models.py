@@ -43,6 +43,10 @@ def milliseconds_since_epoch_to_datetime(milliseconds_since_epoch: int, tz: time
 
 def parse_date_from_string(s: str):
     dt = dateparser.parse(s)
+    if dt is None:
+        raise ValueError(f'Could not parse the string "{s}" into a valid datetime object.'
+                         f' Please either use a fixed date such as "1982-09-13" or'
+                         f' relative expression such as "7 days ago", "today", etc.')
     tz = dt.tzinfo or timezone.utc
     return dt.replace(hour=0, minute=0, second=0, microsecond=0, fold=0, tzinfo=tz)
 
