@@ -26,6 +26,9 @@ ENDPOINT_REACTIONS = "reactions"
 # Enum endpoints:
 ENDPOINT_DEGREES = "degrees"
 
+# Other constants:
+DEFAULT_PAGE_SIZE = 1000
+
 
 def auth_header(access_token: str):
     return {'Authorization': 'Bearer ' + access_token}
@@ -128,11 +131,14 @@ class LinkedInClient(HttpClient):
         url = f"{ENDPOINT_ORG}/{organization_id}"
         return self.get(endpoint_path=url)
 
-    def get_organization_by_vanity_name(self, vanity_name: str, start: int | None = None, count: int | None = 10):
+    def get_organization_by_vanity_name(self,
+                                        vanity_name: str,
+                                        start: int | None = None,
+                                        count: int = DEFAULT_PAGE_SIZE):
         params = {"q": "vanityName", "vanityName": vanity_name}
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG, params=params, count=count, start=start)
 
-    def get_organization_acls(self, role: str | None = None, start: int | None = None, count: int | None = 10):
+    def get_organization_acls(self, role: str | None = None, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
         params = {}
         if role:
             params["q"] = role
@@ -142,7 +148,7 @@ class LinkedInClient(HttpClient):
                                          organization_urn: URN,
                                          time_intervals: TimeIntervals | None = None,
                                          start: int | None = None,
-                                         count: int | None = 1000):
+                                         count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organization", "organization": str(organization_urn)}
         # Cannot do this commented out sensible thing:
@@ -151,9 +157,6 @@ class LinkedInClient(HttpClient):
         # I must do this to prevent URL encoding instead:
         if time_intervals:
             url = f"{ENDPOINT_ORG_PAGE_STATS}?timeIntervals={time_intervals.to_url_string()}"
-            # Need to ensure count is strictly larger than the expected count of elements due to API bug:
-            if count <= time_intervals.amount:
-                count = time_intervals.amount + 1
         else:
             url = ENDPOINT_ORG_PAGE_STATS
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
@@ -162,7 +165,7 @@ class LinkedInClient(HttpClient):
                                              organization_urn: URN,
                                              time_intervals: TimeIntervals | None = None,
                                              start: int | None = None,
-                                             count: int | None = 1000):
+                                             count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn)}
         # Cannot do this commented out sensible thing:
@@ -171,9 +174,6 @@ class LinkedInClient(HttpClient):
         # I must do this to prevent URL encoding instead:
         if time_intervals:
             url = f"{ENDPOINT_ORG_FOLLOWER_STATS}?timeIntervals={time_intervals.to_url_string()}"
-            # Need to ensure count is strictly larger than the expected count of elements due to API bug:
-            if count <= time_intervals.amount:
-                count = time_intervals.amount + 1
         else:
             url = ENDPOINT_ORG_FOLLOWER_STATS
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
@@ -182,7 +182,7 @@ class LinkedInClient(HttpClient):
                                           organization_urn: URN,
                                           time_intervals: TimeIntervals | None = None,
                                           start: int | None = None,
-                                          count: int | None = 1000):
+                                          count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn)}
         # Cannot do this commented out sensible thing:
@@ -191,41 +191,38 @@ class LinkedInClient(HttpClient):
         # I must do this to prevent URL encoding instead:
         if time_intervals:
             url = f"{ENDPOINT_ORG_SHARE_STATS}?timeIntervals={time_intervals.to_url_string()}"
-            # Need to ensure count is strictly larger than the expected count of elements due to API bug:
-            if count <= time_intervals.amount:
-                count = time_intervals.amount + 1
         else:
             url = ENDPOINT_ORG_SHARE_STATS
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
-    def get_post_by_urn(self, post_urn: str):
-        url = f"{ENDPOINT_POSTS}/{quote(post_urn)}"
+    def get_post_by_urn(self, post_urn: URN):
+        url = f"{ENDPOINT_POSTS}/{quote(str(post_urn))}"
         return self.get(endpoint_path=url)
 
     def get_posts_by_author(self,
-                            author_urn: str,
+                            author_urn: URN,
                             is_dsc: bool = False,
                             start: int | None = None,
-                            count: int | None = 100):
+                            count: int = DEFAULT_PAGE_SIZE):
         params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
-    def get_comments_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
-        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/comments"
+    def get_comments_on_post(self, post_urn: URN, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}/comments"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
 
-    def get_likes_on_post(self, post_urn: str, start: int | None = None, count: int | None = 10):
-        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}/likes"
+    def get_likes_on_post(self, post_urn: URN, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}/likes"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
 
-    def get_social_action_summary_on_post(self, post_urn: str):
-        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}"
+    def get_social_action_summary_on_post(self, post_urn: URN):
+        url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}"
         return self.get(endpoint_path=url)
 
     def get_all_standardized_data_type_enum_values(self,
                                                    standardized_data_type: StandardizedDataType,
                                                    start: int | None = None,
-                                                   count: int | None = 1000):
+                                                   count: int = DEFAULT_PAGE_SIZE):
         url = ("skills?locale=(language:en,country:US)"
                if standardized_data_type is StandardizedDataType.SKILLS else standardized_data_type.value)
         return self._handle_pagination(endpoint_path=url, count=count, start=start)

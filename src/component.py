@@ -80,19 +80,13 @@ class LinkedInPagesExtractor(ComponentBase):
                 self.statistics_processor_class = ShareStatisticsProcessor
             else:
                 raise ValueError(f"Invalid extraction target: {self.extraction_target}")
-            output_tables = self.get_all_processed_statistics_data(organization_urns=organization_urns)
+            output_tables = self.get_all_statistics_tables(organization_urns=organization_urns)
+        elif self.extraction_target is ExtractionTarget.POSTS:
+            output_tables = self.get_all_posts_based_tables()
+        elif self.extraction_target is ExtractionTarget.ENUMS:
+            output_tables = self.get_all_standardized_data_enum_tables()
         else:
-            if self.extraction_target is ExtractionTarget.POSTS:
-                raise NotImplementedError("Posts extraction is not implemented at the moment.")
-            elif self.extraction_target is ExtractionTarget.ENUMS:
-                output_tables = [
-                    create_standardized_data_enum_table(standardized_data_type,
-                                                        records=self.client.get_all_standardized_data_type_enum_values(
-                                                            standardized_data_type=standardized_data_type))
-                    for standardized_data_type in StandardizedDataType
-                ]
-            else:
-                raise ValueError(f"Invalid extraction target: {self.extraction_target}")
+            raise ValueError(f"Invalid extraction target: {self.extraction_target}")
 
         for table in output_tables:
             table.save_as_csv_with_manifest(component=self, incremental=incremental, include_csv_header=debug)
@@ -108,7 +102,7 @@ class LinkedInPagesExtractor(ComponentBase):
             organization_urns = [URN.from_str(org_acl["organization"]) for org_acl in organization_acls]
         return organization_urns
 
-    def get_all_processed_statistics_data(self, organization_urns: list[URN]) -> Iterable[Table]:
+    def get_all_statistics_tables(self, organization_urns: list[URN]) -> Iterable[Table]:
         assert hasattr(self, "statistics_processor_class") and hasattr(self, "time_intervals")
         all_stats_data = chain.from_iterable(
             self.get_statistics_data_for_organization(organization_urn=organization_urn)
@@ -122,6 +116,17 @@ class LinkedInPagesExtractor(ComponentBase):
             return self.linked_in_client_method(organization_urn, time_intervals=self.time_intervals)
         except LinkedInClientException as client_exc:
             raise UserException(client_exc) from client_exc
+
+    def get_all_standardized_data_enum_tables(self):
+        return [
+            create_standardized_data_enum_table(standardized_data_type,
+                                                records=self.client.get_all_standardized_data_type_enum_values(
+                                                    standardized_data_type=standardized_data_type))
+            for standardized_data_type in StandardizedDataType
+        ]
+
+    def get_all_posts_based_tables(self) -> list[Table]:
+        raise NotImplementedError("Posts extraction is not implemented at the moment.")
 
     def get_access_token(self) -> str:
         if "access_token" not in self.configuration.oauth_credentials["data"]:
