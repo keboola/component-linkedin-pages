@@ -15,14 +15,14 @@
         },
         "extraction_target": {
             "title": "Extraction target",
-            "description": "What kind of data do you want to extract.",
+            "description": "What kind of data you want to extract.",
             "type": "string",
             "enum": [
                 "Page statistics",
                 "Follower statistics",
                 "Share statistics",
                 "Posts",
-                "Enumerated types"
+                "Standardized data types"
             ],
             "propertyOrder": 2
         },
