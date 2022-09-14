@@ -4,7 +4,7 @@ from copy import deepcopy
 from itertools import chain
 
 from data_output import Table
-from linkedin.models import TimeIntervals, TimeRange
+from linkedin.models import StandardizedDataType, TimeIntervals, TimeRange
 
 
 def flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '_') -> MutableMapping:
@@ -56,3 +56,51 @@ class ShareStatisticsProcessor(OrganizationStatisticsProcessor):
                 processed_element["timeRange"]).to_serializable_dict()
         processed_element = flatten_dict(processed_element)
         return processed_element
+
+
+def create_standardized_data_enum_table(standardized_data_type: StandardizedDataType,
+                                        records: Iterable[dict]) -> Table | None:
+    def process_enum_element(el: dict) -> dict:
+        if standardized_data_type is StandardizedDataType.SKILLS:
+            processed_element = {"standardizedName": el["standardizedName"], "id": el["id"]}
+        elif standardized_data_type is StandardizedDataType.IAB_CATEGORIES:
+            processed_element = {"displayName": el["displayName"], "iabName": el["iabName"], "id": el["id"]}
+        elif standardized_data_type is StandardizedDataType.COUNTRIES:
+            processed_element = {
+                "name": el["name"]["value"],
+                "id": el["countryCode"],
+                "urn": el["$URN"],
+                "countryCode": el["countryCode"]
+            }
+        elif standardized_data_type is StandardizedDataType.STATES:
+            processed_element = {
+                "name": el["name"]["value"],
+                "id": el["stateCode"],
+                "urn": el["$URN"],
+                "stateCode": el["stateCode"],
+                "country": el["country"]
+            }
+        elif standardized_data_type is StandardizedDataType.REGIONS:
+            processed_element = {
+                "name": el["name"]["value"],
+                "id": el["id"],
+                "urn": el["$URN"],
+                "country": el["country"]
+            }
+        else:
+            processed_element = {"name": el["name"]["localized"]["en_US"], "id": el["id"], "urn": el["$URN"]}
+            for field_name in ("rollup", "rollupIds", "parentId"):
+                if el.get(field_name):
+                    processed_element[field_name] = el[field_name]
+        return processed_element
+
+    records_processed = (process_enum_element(d) for d in records)
+    record_processed: dict = next(records_processed, None)
+    if record_processed is None:
+        return
+    columns = list(record_processed.keys())
+    records_processed = chain((record_processed,), records_processed)
+    return Table(name=standardized_data_type.normalized_name,
+                 columns=columns,
+                 primary_key=["id"],
+                 records=records_processed)

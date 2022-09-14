@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 from keboola.http_client.http import HttpClient, Cookie
 
-from .models import URN, TimeIntervals
+from .models import URN, TimeIntervals, StandardizedDataType
 
 BASE_URL = "https://api.linkedin.com"
 API_VERSION = "v2"
@@ -22,6 +22,9 @@ ENDPOINT_ORG_SHARE_STATS = "organizationalEntityShareStatistics"
 ENDPOINT_POSTS = "posts"
 ENDPOINT_SOCIAL_ACTIONS = "socialActions"
 ENDPOINT_REACTIONS = "reactions"
+
+# Enum endpoints:
+ENDPOINT_DEGREES = "degrees"
 
 
 def auth_header(access_token: str):
@@ -105,15 +108,19 @@ class LinkedInClient(HttpClient):
         params["start"] = 0
 
         def generator():
+            total_elements_downloaded = 0
             all_pages_handled = False
             while not all_pages_handled:
                 next_page = self.get(params=params, **kwargs)
                 elements: List[Dict] = next_page["elements"]
+                paging_info: Dict[str, int | List[Dict[str, str]]] = next_page["paging"]
+                total_elements = paging_info.get("total")
                 yield from elements
-                if len(elements) < count:
-                    all_pages_handled = True
-                else:
-                    params["start"] += count
+                actual_page_size = len(elements)
+                total_elements_downloaded += actual_page_size
+                all_pages_handled = bool((total_elements and total_elements_downloaded >= total_elements) or
+                                         (not total_elements and actual_page_size < count))
+                params["start"] += count
 
         return generator()
 
@@ -214,3 +221,11 @@ class LinkedInClient(HttpClient):
     def get_social_action_summary_on_post(self, post_urn: str):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(post_urn)}"
         return self.get(endpoint_path=url)
+
+    def get_all_standardized_data_type_enum_values(self,
+                                                   standardized_data_type: StandardizedDataType,
+                                                   start: int | None = None,
+                                                   count: int | None = 1000):
+        url = ("skills?locale=(language:en,country:US)"
+               if standardized_data_type is StandardizedDataType.SKILLS else standardized_data_type.value)
+        return self._handle_pagination(endpoint_path=url, count=count, start=start)

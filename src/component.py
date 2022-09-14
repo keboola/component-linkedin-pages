@@ -6,9 +6,10 @@ from typing import Iterable, Iterator
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange)
+from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
+                      StandardizedDataType)
 
-from data_processing import ShareStatisticsProcessor
+from data_processing import ShareStatisticsProcessor, create_standardized_data_enum_table
 from data_output import Table
 
 # Global config keys:
@@ -31,7 +32,7 @@ class ExtractionTarget(Enum):
     FOLLOWER_STATS = "Follower statistics"
     SHARE_STATS = "Share statistics"
     POSTS = "Posts"
-    ENUMS = "Enumerated types"
+    ENUMS = "Standardized data types"
 
 
 STATS_EXTRACTION_TARGETS = (ExtractionTarget.PAGE_STATS, ExtractionTarget.FOLLOWER_STATS, ExtractionTarget.SHARE_STATS)
@@ -70,8 +71,10 @@ class LinkedInPagesExtractor(ComponentBase):
         if self.extraction_target in STATS_EXTRACTION_TARGETS:
             if self.extraction_target is ExtractionTarget.PAGE_STATS:
                 self.linked_in_client_method = self.client.get_organization_page_statistics
+                raise NotImplementedError("Page statistics extraction is not implemented at the moment.")
             elif self.extraction_target is ExtractionTarget.FOLLOWER_STATS:
                 self.linked_in_client_method = self.client.get_organization_follower_statistics
+                raise NotImplementedError("Follower statistics extraction is not implemented at the moment.")
             elif self.extraction_target is ExtractionTarget.SHARE_STATS:
                 self.linked_in_client_method = self.client.get_organization_share_statistics
                 self.statistics_processor_class = ShareStatisticsProcessor
@@ -79,7 +82,17 @@ class LinkedInPagesExtractor(ComponentBase):
                 raise ValueError(f"Invalid extraction target: {self.extraction_target}")
             output_tables = self.get_all_processed_statistics_data(organization_urns=organization_urns)
         else:
-            raise NotImplementedError("Only organization statistics extraction targets are implemented.")
+            if self.extraction_target is ExtractionTarget.POSTS:
+                raise NotImplementedError("Posts extraction is not implemented at the moment.")
+            elif self.extraction_target is ExtractionTarget.ENUMS:
+                output_tables = [
+                    create_standardized_data_enum_table(standardized_data_type,
+                                                        records=self.client.get_all_standardized_data_type_enum_values(
+                                                            standardized_data_type=standardized_data_type))
+                    for standardized_data_type in StandardizedDataType
+                ]
+            else:
+                raise ValueError(f"Invalid extraction target: {self.extraction_target}")
 
         for table in output_tables:
             table.save_as_csv_with_manifest(component=self, incremental=incremental, include_csv_header=debug)

@@ -5,6 +5,7 @@ from enum import Enum, unique
 import math
 
 import dateparser
+from inflection import underscore
 
 KEY_START = "start"
 KEY_END = "end"
@@ -29,8 +30,25 @@ class URN:
             raise ValueError(f"URN string invalid: {s}")
 
 
-def organization_urn(id: str | int):
-    return URN(entity_type="organization", id=id)
+@unique
+class StandardizedDataType(Enum):
+    DEGREES = "degrees"
+    FIELDS_OF_STUDY = "fieldsOfStudy"
+    FUNCTONS = "functions"
+    INDUSTRIES = "industries"
+    SENIORITIES = "seniorities"
+    SKILLS = "skills"
+    # SUPER_TITLES = "superTitles"  # Does not work due to 403 API error # TODO: ask LinkedIn support
+    TITLES = "titles"
+    IAB_CATEGORIES = "iabCategories"
+    # Locations:
+    COUNTRIES = "countries"
+    STATES = "states"
+    REGIONS = "regions"
+
+    @property
+    def normalized_name(self) -> str:
+        return underscore(self.value)
 
 
 def datetime_to_milliseconds_since_epoch(dt: datetime) -> int:
