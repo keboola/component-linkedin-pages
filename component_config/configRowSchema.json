@@ -1,67 +1,121 @@
 {
-    "type": "object",
-    "title": "LinkedIn pages extractor row configuration",
-    "required": [
-        "incremental",
-        "extraction_target"
-    ],
-    "properties": {
-        "incremental": {
-            "title": "Incremental loading",
-            "description": "Check if you want to use incremental loading of data into Keboola storage.",
-            "type": "boolean",
-            "format": "checkbox",
-            "propertyOrder": 1
-        },
-        "extraction_target": {
-            "title": "Extraction target",
-            "description": "What kind of data you want to extract.",
-            "type": "string",
-            "enum": [
-                "Page statistics",
-                "Follower statistics",
-                "Share statistics",
-                "Posts",
-                "Standardized data types"
-            ],
-            "propertyOrder": 2
-        },
-        "time_range": {
-            "title": "Time range",
-            "description": "Time range can either be unspecified (null), then all time statistics will be downloaded, otherwise it determines the time range of the data.",
-            "propertyOrder": 3,
-            "default": {
-                "start": "7 days ago",
-                "end": "today"
-            },
-            "oneOf": [
-                {
-                    "title": "Unspecified time range",
-                    "type": "null"
-                },
-                {
-                    "title": "Specified time range",
-                    "type": "object",
-                    "required": [
-                        "start",
-                        "end"
-                    ],
-                    "properties": {
-                        "start": {
-                            "title": "Start",
-                            "description": "Start of the time range. Can either be a specific datetime or relative expression such as '7 days ago', '1 year ago', etc.",
-                            "type": "string",
-                            "propertyOrder": 1
-                        },
-                        "end": {
-                            "title": "End",
-                            "description": "End of the time range. Can either be a specific datetime or relative expression such as 'now', '1 day ago', etc.",
-                            "type": "string",
-                            "propertyOrder": 2
-                        }
-                    }
-                }
-            ]
+  "type": "object",
+  "title": "Configuration Parameters",
+  "properties": {
+    "endpoints": {
+      "title": "Endpoints",
+      "description": "Select the data you wish to download. Lifetime statistics provide a current totals. Time Bound statistics retrieve data within specified time range.",
+      "type": "string",
+      "enum": [
+        "page_statistics_time_bound",
+        "page_statistics_lifetime",
+        "follower_statistics_time_bound",
+        "follower_statistics_lifetime",
+        "share_statistics_time_bound",
+        "share_statistics_lifetime",
+        "posts",
+        "enumerated_types"
+      ],
+      "options": {
+        "enum_titles": [
+          "Page Statistics (Time Bound)",
+          "Page Statistics (Lifetime)",
+          "Follower Statistics (Time Bound)",
+          "Follower Statistics (Lifetime)",
+          "Share Statistics (Time Bound)",
+          "Share Statistics (Lifetime)",
+          "Posts",
+          "Enumerated Types"
+        ]
+      },
+      "required": true,
+      "propertyOrder": 10
+    },
+    "sync_options": {
+      "options": {
+        "dependencies": {
+          "endpoints": [
+            "page_statistics_time_bound",
+            "follower_statistics_time_bound",
+            "share_statistics_time_bound"
+          ]
         }
+      },
+      "type": "object",
+      "title": "Sync Options",
+      "propertyOrder": 20,
+      "properties": {
+        "sync_mode": {
+          "type": "string",
+          "required": true,
+          "options": {
+            "enum_titles": [
+              "Full Sync",
+              "Incremental Sync"
+            ]
+          },
+          "title": "Sync Mode",
+          "enum": [
+            "full_sync",
+            "incremental_sync"
+          ],
+          "default": "full_sync",
+          "description": "Full Sync downloads all data from LinkedIn every run, Incremental Sync downloads data in the specified time range.",
+          "propertyOrder": 10
+        },
+        "date_from": {
+          "type": "string",
+          "title": "Date From",
+          "default": "last run",
+          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as last run, which will fetch data from the last run of the component.",
+          "propertyOrder": 20,
+          "options": {
+            "dependencies": {
+              "sync_mode": "incremental_sync"
+            }
+          }
+        },
+        "date_to": {
+          "type": "string",
+          "title": "Date to",
+          "default": "now",
+          "description": "Date to which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, now, etc.",
+          "propertyOrder": 30,
+          "options": {
+            "dependencies": {
+              "sync_mode": "incremental_sync"
+            }
+          }
+        }
+      }
+    },
+    "destination": {
+      "title": "Destination",
+      "type": "object",
+      "propertyOrder": 400,
+      "required": [
+        "load_type"
+      ],
+      "properties": {
+        "load_type": {
+          "type": "string",
+          "enum": [
+            "full_load",
+            "incremental_load"
+          ],
+          "options": {
+            "enum_titles": [
+              "Full Load",
+              "Incremental Load"
+            ]
+          },
+          "default": "full_load",
+          "format": "checkbox",
+          "title": "Load Type",
+          "description": "If Full load is used, the destination table will be overwritten every run. If incremental load is used, data will be upserted into the destination table.",
+          "propertyOrder": 20
+        }
+      }
     }
+  }
 }
