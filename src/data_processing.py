@@ -3,8 +3,8 @@ from typing import Iterable, Iterator, MutableMapping
 from copy import deepcopy
 from itertools import chain
 
-from data_output import Table
-from linkedin.models import StandardizedDataType, TimeIntervals, TimeRange
+from csv_table import Table
+from linkedin.models import URN, StandardizedDataType, TimeIntervals, TimeRange
 
 
 def flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '_') -> MutableMapping:
@@ -104,3 +104,28 @@ def create_standardized_data_enum_table(standardized_data_type: StandardizedData
                  columns=columns,
                  primary_key=["id"],
                  records=records_processed)
+
+
+def create_table_by_flattening_dict(records: Iterable[dict], table_name: str, primary_key: list[str]):
+    records_processed = (flatten_dict(d) for d in records)
+    record_processed: dict = next(records_processed, None)
+    if record_processed is None:
+        return
+    columns = list(record_processed.keys())
+    for pk in primary_key:
+        if pk not in columns:
+            raise ValueError(f"Invalid primary key. Primary key element '{pk}' not found in columns: {columns}.")
+    records_processed = chain((record_processed,), records_processed)
+    return Table(name=table_name, columns=columns, primary_key=primary_key, records=records_processed)
+
+
+def create_posts_subobject_table(urn_to_records_dict: dict[URN, Iterable[dict]], table_name: str,
+                                 primary_key: list[str]):
+    def process_record(record: dict, post_urn: URN):
+        processed_rec = record.copy()
+        processed_rec["post_urn"] = str(post_urn)
+        return processed_rec
+
+    records_processed = chain.from_iterable(
+        (process_record(d, post_urn=urn) for d in records) for urn, records in urn_to_records_dict.items())
+    return create_table_by_flattening_dict(records=records_processed, table_name=table_name, primary_key=primary_key)

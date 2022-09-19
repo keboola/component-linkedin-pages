@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import logging
-from typing import Iterable
+from typing import Iterable, Iterator, Sequence
 import os
+import csv
 
 from keboola.component.base import ComponentBase
 from keboola.component.dao import TableMetadata
@@ -19,6 +20,7 @@ class Table:
     delete_where_spec: dict | None = None
     file_path: str | None = None
     saved: bool = False
+    _header_included: bool = False
 
     def save_as_csv_with_manifest(self,
                                   component: ComponentBase,
@@ -37,12 +39,28 @@ class Table:
                                                           table_metadata=self.metadata,
                                                           delete_where=self.delete_where_spec)
         os.makedirs(component.tables_out_path, exist_ok=True)
-        self.file_path = os.path.join(component.tables_out_path, table_def.name)
+        self.file_path = table_def.full_path
         with CachedOrthogonalDictWriter(self.file_path, dialect='kbc',
                                         fieldnames=table_def.columns.copy()) as csv_writer:
             if include_csv_header:
                 csv_writer.writeheader()
+                self._header_included = True
             csv_writer.writerows(self.records)
         self.columns = table_def.columns = csv_writer.fieldnames
         component.write_manifest(table_def)
         self.saved = True
+
+    def get_refreshed_records_iterator(self) -> Iterator[dict]:
+        if isinstance(self.records, Sequence):
+            return iter(self.records)    # No need to do anything, we can just iterate over records again
+
+        # Records are not directly recoverable, we need to read them from the created CSV:
+        def generator():
+            with open(self.file_path, "r") as f:
+                csv_reader = csv.DictReader(f, fieldnames=self.columns, dialect='kbc')
+                if self._header_included:
+                    next(csv_reader)    # skipping CSV header
+                yield from csv_reader
+
+        self.records: Iterable[dict] = generator()
+        return iter(self.records)

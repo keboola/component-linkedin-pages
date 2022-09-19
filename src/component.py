@@ -9,8 +9,9 @@ from keboola.component.exceptions import UserException
 from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
                       StandardizedDataType)
 
-from data_processing import ShareStatisticsProcessor, create_standardized_data_enum_table
-from data_output import Table
+from data_processing import (ShareStatisticsProcessor, create_standardized_data_enum_table,
+                             create_posts_subobject_table, create_table_by_flattening_dict)
+from csv_table import Table
 
 # Global config keys:
 KEY_DEBUG = "debug"
@@ -50,25 +51,17 @@ class LinkedInPagesExtractor(ComponentBase):
         self.extraction_target = ExtractionTarget(params[KEY_EXTRACTION_TARGET])
         organization_ids: list[int] | None = params.get(KEY_ORGANIZATION_IDS)
         time_range: dict | None = params.get(KEY_TIME_RANGE)
-        incremental = bool(params.get(KEY_INCREMENTAL))
-        debug = bool(params.get(KEY_DEBUG))
+        self.incremental = bool(params.get(KEY_INCREMENTAL))
+        self.debug = bool(params.get(KEY_DEBUG))
 
         access_token = self.get_access_token()
         self.client = LinkedInClient(access_token)
 
         organization_urns = self.get_organization_urns(organization_ids)
 
-        if time_range:
-            try:
-                self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
-                                                    time_range=TimeRange.from_config_dict(time_range))
-                logging.info(f"Specified time range parsed to {self.time_intervals.time_range}")
-            except ValueError as ve:
-                raise UserException(f"Invalid time range provided. {ve.args[0]}") from ve
-        else:
-            self.time_intervals = None
-
         if self.extraction_target in STATS_EXTRACTION_TARGETS:
+            self.set_time_intervals(time_range=time_range)
+
             if self.extraction_target is ExtractionTarget.PAGE_STATS:
                 self.linked_in_client_method = self.client.get_organization_page_statistics
                 raise NotImplementedError("Page statistics extraction is not implemented at the moment.")
@@ -81,15 +74,16 @@ class LinkedInPagesExtractor(ComponentBase):
             else:
                 raise ValueError(f"Invalid extraction target: {self.extraction_target}")
             output_tables = self.get_all_statistics_tables(organization_urns=organization_urns)
+
         elif self.extraction_target is ExtractionTarget.POSTS:
-            output_tables = self.get_all_posts_based_tables()
+            output_tables = self.get_all_posts_based_tables(organization_urns=organization_urns)
         elif self.extraction_target is ExtractionTarget.ENUMS:
             output_tables = self.get_all_standardized_data_enum_tables()
         else:
             raise ValueError(f"Invalid extraction target: {self.extraction_target}")
 
         for table in output_tables:
-            table.save_as_csv_with_manifest(component=self, incremental=incremental, include_csv_header=debug)
+            table.save_as_csv_with_manifest(component=self, incremental=self.incremental, include_csv_header=self.debug)
 
     def get_organization_urns(self, organization_ids: list[int]):
         if organization_ids:
@@ -102,7 +96,18 @@ class LinkedInPagesExtractor(ComponentBase):
             organization_urns = [URN.from_str(org_acl["organization"]) for org_acl in organization_acls]
         return organization_urns
 
-    def get_all_statistics_tables(self, organization_urns: list[URN]) -> Iterable[Table]:
+    def set_time_intervals(self, time_range: dict | None):
+        if time_range:
+            try:
+                self.time_intervals = TimeIntervals(time_granularity_type=STATISTICS_REPORT_GRANULARITY,
+                                                    time_range=TimeRange.from_config_dict(time_range))
+                logging.info(f"Specified time range parsed to {self.time_intervals.time_range}")
+            except ValueError as ve:
+                raise UserException(f"Invalid time range provided. {ve.args[0]}") from ve
+        else:
+            self.time_intervals = None
+
+    def get_all_statistics_tables(self, organization_urns: Iterable[URN]) -> list[Table]:
         assert hasattr(self, "statistics_processor_class") and hasattr(self, "time_intervals")
         all_stats_data = chain.from_iterable(
             self.get_statistics_data_for_organization(organization_urn=organization_urn)
@@ -125,8 +130,26 @@ class LinkedInPagesExtractor(ComponentBase):
             for standardized_data_type in StandardizedDataType
         ]
 
-    def get_all_posts_based_tables(self) -> list[Table]:
-        raise NotImplementedError("Posts extraction is not implemented at the moment.")
+    def get_all_posts_based_tables(self, organization_urns: Iterable[URN]) -> list[Table]:
+        posts_records = (chain.from_iterable(
+            chain(self.client.get_posts_by_author(urn, is_dsc=True), self.client.get_posts_by_author(urn, is_dsc=False))
+            for urn in organization_urns))
+        posts_table = create_table_by_flattening_dict(records=posts_records, table_name="posts", primary_key=["id"])
+        posts_table.save_as_csv_with_manifest(self, incremental=self.incremental, include_csv_header=self.debug)
+        posts_urns = list(    # Keeping the posts URNs in memory here - may cause problems if number of posts is high
+            URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
+
+        comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
+        comments_table = create_posts_subobject_table(urn_to_records_dict=comments_urn_to_records,
+                                                      table_name="comments",
+                                                      primary_key=["id"])
+
+        likes_urn_to_records = {urn: self.client.get_likes_on_post(urn) for urn in posts_urns}
+        likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
+                                                   table_name="likes",
+                                                   primary_key=["$URN"])
+
+        return [posts_table, comments_table, likes_table]
 
     def get_access_token(self) -> str:
         if "access_token" not in self.configuration.oauth_credentials["data"]:

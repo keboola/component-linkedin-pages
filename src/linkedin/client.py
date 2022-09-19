@@ -34,7 +34,7 @@ def auth_header(access_token: str):
     return {'Authorization': 'Bearer ' + access_token}
 
 
-def bool_param_string(val: bool):
+def bool_to_param_string(val: bool):
     return "true" if val else "false"
 
 
@@ -201,10 +201,10 @@ class LinkedInClient(HttpClient):
 
     def get_posts_by_author(self,
                             author_urn: URN,
-                            is_dsc: bool = False,
+                            is_dsc: bool,
                             start: int | None = None,
                             count: int = DEFAULT_PAGE_SIZE):
-        params = {"q": "author", "author": author_urn, "isDsc": bool_param_string(is_dsc)}
+        params = {"q": "author", "author": author_urn, "isDsc": bool_to_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
     def get_comments_on_post(self, post_urn: URN, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
