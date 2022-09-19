@@ -1,26 +1,46 @@
 {
   "type": "object",
-  "title": "LinkedIn pages extractor row configuration",
-  "required": [
-    "endpoint",
-    "sync_options",
-    "destination"
-  ],
+  "title": "Configuration Parameters",
   "properties": {
-    "endpoint": {
-      "title": "Endpoint",
-      "description": "What kind of data you want to extract.",
+    "endpoints": {
+      "title": "Endpoints",
+      "description": "Select the data you wish to download. Lifetime statistics provide a current totals. Time Bound statistics retrieve data within specified time range.",
       "type": "string",
       "enum": [
-        "Page statistics",
-        "Follower statistics",
-        "Share statistics",
-        "Posts",
-        "Standard Entities"
+        "page_statistics_time_bound",
+        "page_statistics_lifetime",
+        "follower_statistics_time_bound",
+        "follower_statistics_lifetime",
+        "share_statistics_time_bound",
+        "share_statistics_lifetime",
+        "posts",
+        "enumerated_types"
       ],
-      "propertyOrder": 2
+      "options": {
+        "enum_titles": [
+          "Page Statistics (Time Bound)",
+          "Page Statistics (Lifetime)",
+          "Follower Statistics (Time Bound)",
+          "Follower Statistics (Lifetime)",
+          "Share Statistics (Time Bound)",
+          "Share Statistics (Lifetime)",
+          "Posts",
+          "Enumerated Types"
+        ]
+      },
+      "required": true,
+      "propertyOrder": 10
     },
     "sync_options": {
+      "options": {
+        "dependencies": {
+          "endpoints": [
+            "page_statistics_time_bound",
+            "follower_statistics_time_bound",
+            "share_statistics_time_bound"
+          ]
+        }
+      },
       "type": "object",
       "title": "Sync Options",
       "propertyOrder": 20,
@@ -28,19 +48,19 @@
         "sync_mode": {
           "type": "string",
           "required": true,
-          "title": "Sync Mode",
-          "enum": [
-            "full_sync",
-            "incremental_sync"
-          ],
           "options": {
             "enum_titles": [
               "Full Sync",
               "Incremental Sync"
             ]
           },
-          "default": "incremental_sync",
-          "description": "Full Sync downloads all specified data from LinkedIn every run, Incremental Sync downloads data between a specified time range",
+          "title": "Sync Mode",
+          "enum": [
+            "full_sync",
+            "incremental_sync"
+          ],
+          "default": "full_sync",
+          "description": "Full Sync downloads all data from LinkedIn every run, Incremental Sync downloads data in the specified time range.",
           "propertyOrder": 10
         },
         "date_from": {
