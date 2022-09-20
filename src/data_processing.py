@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 from typing import Iterable, Iterator, MutableMapping
 from copy import deepcopy
 from itertools import chain
@@ -16,6 +17,24 @@ def flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '_') -> Mut
         else:
             items.append((new_key, v))
     return dict(items)
+
+
+def create_table(records: Iterable[dict], table_name: str, primary_key: list[str], flatten_records: bool = True):
+    records = iter(records)
+    if flatten_records:
+        records_processed = (flatten_dict(d) for d in records)
+    else:
+        records_processed = records
+    record_processed: dict = next(records_processed, None)
+    if record_processed is None:
+        logging.warning(f"API returned no records for output table '{table_name}'.")
+        return Table(name=table_name, columns=None, primary_key=primary_key, records=records_processed)
+    columns = list(record_processed.keys())
+    for pk in primary_key:
+        if pk not in columns:
+            raise ValueError(f"Invalid primary key. Primary key element '{pk}' not found in columns: {columns}.")
+    records_processed = chain((record_processed,), records_processed)
+    return Table(name=table_name, columns=columns, primary_key=primary_key, records=records_processed)
 
 
 class OrganizationStatisticsProcessor(ABC):
@@ -39,13 +58,8 @@ class ShareStatisticsProcessor(OrganizationStatisticsProcessor):
         return [table] if table else []
 
     def get_share_statistics(self, table_name: str, primary_key: list[str]) -> Table | None:
-        records = (self.process_element(element) for element in self.page_statistics_iterator)
-        record = next(records, None)
-        if record is None:
-            return
-        columns = list(record.keys())
-        records = chain((record,), records)
-        return Table(name=table_name, columns=columns, primary_key=primary_key, records=records)
+        records_processed = (self.process_element(element) for element in self.page_statistics_iterator)
+        return create_table(records=records_processed, table_name=table_name, primary_key=primary_key)
 
     def process_element(self, element: dict):
         processed_element = deepcopy(element)
@@ -54,7 +68,6 @@ class ShareStatisticsProcessor(OrganizationStatisticsProcessor):
         if processed_element.get("timeRange"):
             processed_element["timeRange"] = TimeRange.from_api_dict(
                 processed_element["timeRange"]).to_serializable_dict()
-        processed_element = flatten_dict(processed_element)
         return processed_element
 
 
@@ -95,28 +108,10 @@ def create_standardized_data_enum_table(standardized_data_type: StandardizedData
         return processed_element
 
     records_processed = (process_enum_element(d) for d in records)
-    record_processed: dict = next(records_processed, None)
-    if record_processed is None:
-        return
-    columns = list(record_processed.keys())
-    records_processed = chain((record_processed,), records_processed)
-    return Table(name=standardized_data_type.normalized_name,
-                 columns=columns,
-                 primary_key=["id"],
-                 records=records_processed)
-
-
-def create_table_by_flattening_dict(records: Iterable[dict], table_name: str, primary_key: list[str]):
-    records_processed = (flatten_dict(d) for d in records)
-    record_processed: dict = next(records_processed, None)
-    if record_processed is None:
-        return
-    columns = list(record_processed.keys())
-    for pk in primary_key:
-        if pk not in columns:
-            raise ValueError(f"Invalid primary key. Primary key element '{pk}' not found in columns: {columns}.")
-    records_processed = chain((record_processed,), records_processed)
-    return Table(name=table_name, columns=columns, primary_key=primary_key, records=records_processed)
+    return create_table(records=records_processed,
+                        table_name=standardized_data_type.normalized_name,
+                        primary_key=["id"],
+                        flatten_records=False)
 
 
 def create_posts_subobject_table(urn_to_records_dict: dict[URN, Iterable[dict]], table_name: str,
@@ -128,4 +123,4 @@ def create_posts_subobject_table(urn_to_records_dict: dict[URN, Iterable[dict]],
 
     records_processed = chain.from_iterable(
         (process_record(d, post_urn=urn) for d in records) for urn, records in urn_to_records_dict.items())
-    return create_table_by_flattening_dict(records=records_processed, table_name=table_name, primary_key=primary_key)
+    return create_table(records=records_processed, table_name=table_name, primary_key=primary_key)

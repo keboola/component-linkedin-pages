@@ -127,7 +127,10 @@ class LinkedInClient(HttpClient):
 
         return generator()
 
-    def get_administered_organization(self, organization_id: str | int):
+    def get_administered_organization(self, organization_id: str | int | URN):
+        if isinstance(organization_id, URN):
+            assert organization_id.entity_type == "organization"
+            organization_id = organization_id.id
         url = f"{ENDPOINT_ORG}/{organization_id}"
         return self.get(endpoint_path=url)
 

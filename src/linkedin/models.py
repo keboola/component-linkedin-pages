@@ -7,8 +7,12 @@ import math
 import dateparser
 from inflection import underscore
 
-KEY_START = "start"
-KEY_END = "end"
+# Time range config dict params:
+KEY_START = "date_from"
+KEY_END = "date_to"
+
+# Config dict constants:
+VAL_LAST_RUN = "last run"
 
 URN_RE = re.compile(r"urn:li:(\w+):(\d+)")
 
@@ -95,8 +99,17 @@ class TimeRange:
                    end=milliseconds_since_epoch_to_datetime(d["end"]))
 
     @classmethod
-    def from_config_dict(cls, d: dict):
-        return cls(start=parse_date_from_string(d["start"]), end=parse_date_from_string(d["end"]))
+    def from_config_dict(cls, d: dict, last_run_datetime_str: str | None = None):
+        if d[KEY_START] == VAL_LAST_RUN:
+            if last_run_datetime_str:
+                start = parse_date_from_string(last_run_datetime_str)
+            else:
+                raise ValueError("Last run datetime must be specified (in component state)"
+                                 " if 'last run' is used as the start of a time range.")
+        else:
+            start = parse_date_from_string(d[KEY_START])
+        end = parse_date_from_string(d[KEY_END])
+        return cls(start=start, end=end)
 
     def to_serializable_dict(self):
         return {"start": self.start.isoformat(timespec="seconds"), "end": self.end.isoformat(timespec="seconds")}

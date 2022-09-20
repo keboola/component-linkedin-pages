@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from itertools import chain
 import logging
 from typing import Iterable, Iterator, Sequence
 import os
@@ -13,22 +14,47 @@ from csv_tools import CachedOrthogonalDictWriter
 @dataclass(slots=True)
 class Table:
     name: str
-    columns: list[str]
+    columns: list[str] | None
     primary_key: list[str]
     records: Iterable[dict]
     metadata: TableMetadata | None = None
     delete_where_spec: dict | None = None
     file_path: str | None = None
-    saved: bool = False
+    _saved: bool = False
     _header_included: bool = False
+    _is_empty: bool | None = None
+
+    def _is_empty_internal(self):
+        if self._saved:    # Empty tables will never be saved.
+            return False
+        invalid_columns = not self.columns
+        if invalid_columns:
+            return True
+        records_iterator = iter(self.records)
+        test_record = next(records_iterator, None)
+        if test_record is None:
+            return True
+        else:
+            self.records = chain((test_record,), records_iterator)
+            return False
+
+    @property
+    def is_empty(self):
+        if self._is_empty is None:
+            self._is_empty = self._is_empty_internal()
+        return self._is_empty
 
     def save_as_csv_with_manifest(self,
                                   component: ComponentBase,
                                   incremental: bool,
                                   include_csv_header: bool = False,
                                   overwrite=False):
-        if self.saved and not overwrite:
+        if self._saved and not overwrite:
             logging.debug(f"Table already saved, not overwriting. Table: {self}")
+            return
+        if self.is_empty:
+            logging.warning(f"Attempting to save an empty table{' increment' if incremental else ''},"
+                            f" nothing will be loaded into table '{self.name}'.")
             return
 
         table_def = component.create_out_table_definition(name=f"{self.name}.csv",
@@ -48,13 +74,14 @@ class Table:
             csv_writer.writerows(self.records)
         self.columns = table_def.columns = csv_writer.fieldnames
         component.write_manifest(table_def)
-        self.saved = True
+        self._saved = True
 
     def get_refreshed_records_iterator(self) -> Iterator[dict]:
-        if isinstance(self.records, Sequence):
+        if isinstance(self.records, Sequence) or self.is_empty:
             return iter(self.records)    # No need to do anything, we can just iterate over records again
-
         # Records are not directly recoverable, we need to read them from the created CSV:
+        assert self._saved
+
         def generator():
             with open(self.file_path, "r") as f:
                 csv_reader = csv.DictReader(f, fieldnames=self.columns, dialect='kbc')
