@@ -10,8 +10,8 @@ from keboola.component.exceptions import UserException
 from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
                       StandardizedDataType)
 
-from data_processing import (FollowerStatisticsProcessor, ShareStatisticsProcessor, create_standardized_data_enum_table,
-                             create_posts_subobject_table, create_table)
+from data_processing import (FollowerStatisticsProcessor, PageStatisticsProcessor, ShareStatisticsProcessor,
+                             create_standardized_data_enum_table, create_posts_subobject_table, create_table)
 from csv_table import Table
 
 # Global config keys:
@@ -103,7 +103,7 @@ class LinkedInPagesExtractor(ComponentBase):
 
             if self.extraction_target in PAGE_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_page_statistics
-                raise NotImplementedError("Page statistics extraction is not implemented at the moment.")
+                self.statistics_processor_class = PageStatisticsProcessor
             elif self.extraction_target in FOLLOWER_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_follower_statistics
                 self.statistics_processor_class = FollowerStatisticsProcessor

@@ -42,7 +42,7 @@ class StandardizedDataType(Enum):
     INDUSTRIES = "industries"
     SENIORITIES = "seniorities"
     SKILLS = "skills"
-    # SUPER_TITLES = "superTitles"  # Does not work due to 403 API error # TODO: ask LinkedIn support
+    # SUPER_TITLES = "superTitles"  # Does not work due to 403 API error # TODO?: ask LinkedIn support if needed
     TITLES = "titles"
     IAB_CATEGORIES = "iabCategories"
     # Locations:

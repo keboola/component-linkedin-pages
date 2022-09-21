@@ -47,53 +47,37 @@ class OrganizationStatisticsProcessor(ABC):
     def __init__(self, records: Iterable[dict], time_intervals: TimeIntervals | None):
         self.records_iterator = iter(records)
         self.time_intervals = time_intervals
+        self.set_processing_parameters()
         super().__init__()
 
     @abstractmethod
-    def get_result_tables(self) -> Iterable[Table]:
-        pass
+    def set_processing_parameters(self,
+                                  statistics_type_name: str,
+                                  organization_urn_fieldname: str,
+                                  total_statistics_fieldname: str | None = None):
+        self.time_bound_statistics_table_name: str = f"time_bound_{statistics_type_name}_statistics"
+        self.organization_urn_fieldname: str = organization_urn_fieldname
+        self.time_bound_statistics_table_name_primary_key: list[str] = [
+            self.organization_urn_fieldname, "timeRange_start", "timeRange_end"
+        ]
+        self.total_statistics_fieldname: str = (total_statistics_fieldname if total_statistics_fieldname else camelize(
+            f"total_{statistics_type_name}_statistics", uppercase_first_letter=False))
 
-
-class ShareStatisticsProcessor(OrganizationStatisticsProcessor):
-    def get_result_tables(self) -> list[Table]:
-        if self.time_intervals is None:
-            table = self.get_share_statistics(table_name="total_share_statistics", primary_key=["organizationalEntity"])
-        else:
-            table = self.get_share_statistics(table_name="time_bound_share_statistics",
-                                              primary_key=["organizationalEntity", "timeRange_start", "timeRange_end"])
-        return [table]
-
-    def get_share_statistics(self, table_name: str, primary_key: list[str]) -> Table | None:
-        records_processed = (self.process_element(element) for element in self.records_iterator)
-        return create_table(records=records_processed, table_name=table_name, primary_key=primary_key)
-
-    def process_element(self, element: dict):
-        processed_element = deepcopy(element)
-        processed_element.update(processed_element.pop("totalShareStatistics"))
-        if processed_element.get("timeRange"):
-            processed_element["timeRange"] = TimeRange.from_api_dict(
-                processed_element["timeRange"]).to_serializable_dict()
-        return processed_element
-
-
-class FollowerStatisticsProcessor(OrganizationStatisticsProcessor):
     def get_result_tables(self) -> list[Table]:
         if self.time_intervals is None:
             return self.get_total_statistics_tables()
         else:
-            return [
-                self.get_time_bound_statistics_table(
-                    table_name="time_bound_follower_statistics",
-                    primary_key=["organizationalEntity", "timeRange_start", "timeRange_end"])
-            ]
+            return [self.get_time_bound_statistics_table()]
 
-    def get_time_bound_statistics_table(self, table_name: str, primary_key: list[str]) -> Table:
+    def get_time_bound_statistics_table(self) -> Table:
         records_processed = (self.process_time_bound_element(element) for element in self.records_iterator)
-        return create_table(records=records_processed, table_name=table_name, primary_key=primary_key)
+        return create_table(records=records_processed,
+                            table_name=self.time_bound_statistics_table_name,
+                            primary_key=self.time_bound_statistics_table_name_primary_key)
 
     def process_time_bound_element(self, element: dict):
         processed_element = deepcopy(element)
-        processed_element.update(processed_element.pop("followerGains"))
+        processed_element.update(processed_element.pop(self.total_statistics_fieldname))
         if processed_element.get("timeRange"):
             processed_element["timeRange"] = TimeRange.from_api_dict(
                 processed_element["timeRange"]).to_serializable_dict()
@@ -110,22 +94,46 @@ class FollowerStatisticsProcessor(OrganizationStatisticsProcessor):
             create_table(records=records,
                          table_name=underscore(table_name),
                          primary_key=[
-                             "organizationalEntity",
+                             self.organization_urn_fieldname,
                              camelize(X_BY_Y_RE.match(table_name).group(2), uppercase_first_letter=False)
-                         ],
-                         flatten_records=False) for table_name, records in table_name_to_table_records_dict.items()
+                         ] if X_BY_Y_RE.match(table_name) else [self.organization_urn_fieldname],
+                         flatten_records=True) for table_name, records in table_name_to_table_records_dict.items()
         ]
 
     def process_organization_record(self, record: dict) -> dict:
         record_processed = deepcopy(record)
-        organization_urn: str = record_processed.pop("organizationalEntity")
+        organization_urn: str = record_processed.pop(self.organization_urn_fieldname)
         for table_name, table_records in record_processed.items():
-            data_key = X_BY_Y_RE.match(table_name).group(1)
-            for table_record in table_records:
-                table_record: dict
-                table_record["organizationalEntity"] = organization_urn
-                table_record.update(table_record.pop(data_key))
+            if isinstance(table_records, list):
+                data_key = X_BY_Y_RE.match(table_name).group(1)
+                for table_record in table_records:
+                    table_record: dict
+                    table_record[self.organization_urn_fieldname] = organization_urn
+                    table_record.update(table_record.pop(data_key))
+            elif isinstance(table_records, dict):
+                table_records[self.organization_urn_fieldname] = organization_urn
+                record_processed[table_name] = [table_records]
+            else:
+                raise ValueError("Organization records cannot contain values that are neither lists or dicts.")
         return record_processed
+
+
+class ShareStatisticsProcessor(OrganizationStatisticsProcessor):
+    def set_processing_parameters(self):
+        super().set_processing_parameters(statistics_type_name="share",
+                                          organization_urn_fieldname="organizationalEntity")
+
+
+class FollowerStatisticsProcessor(OrganizationStatisticsProcessor):
+    def set_processing_parameters(self):
+        super().set_processing_parameters(statistics_type_name="follower",
+                                          organization_urn_fieldname="organizationalEntity",
+                                          total_statistics_fieldname="followerGains")
+
+
+class PageStatisticsProcessor(OrganizationStatisticsProcessor):
+    def set_processing_parameters(self):
+        super().set_processing_parameters(statistics_type_name="page", organization_urn_fieldname="organization")
 
 
 def create_standardized_data_enum_table(standardized_data_type: StandardizedDataType,
