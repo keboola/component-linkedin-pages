@@ -10,7 +10,7 @@ from keboola.component.exceptions import UserException
 from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
                       StandardizedDataType)
 
-from data_processing import (ShareStatisticsProcessor, create_standardized_data_enum_table,
+from data_processing import (FollowerStatisticsProcessor, ShareStatisticsProcessor, create_standardized_data_enum_table,
                              create_posts_subobject_table, create_table)
 from csv_table import Table
 
@@ -106,7 +106,7 @@ class LinkedInPagesExtractor(ComponentBase):
                 raise NotImplementedError("Page statistics extraction is not implemented at the moment.")
             elif self.extraction_target in FOLLOWER_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_follower_statistics
-                raise NotImplementedError("Follower statistics extraction is not implemented at the moment.")
+                self.statistics_processor_class = FollowerStatisticsProcessor
             elif self.extraction_target in SHARE_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_share_statistics
                 self.statistics_processor_class = ShareStatisticsProcessor
@@ -159,11 +159,10 @@ class LinkedInPagesExtractor(ComponentBase):
 
     def get_all_statistics_tables(self, organization_urns: Iterable[URN]) -> list[Table]:
         assert hasattr(self, "statistics_processor_class") and hasattr(self, "time_intervals")
-        all_stats_data = chain.from_iterable(
+        records = chain.from_iterable(
             self.get_statistics_data_for_organization(organization_urn=organization_urn)
             for organization_urn in organization_urns)
-        return self.statistics_processor_class(page_statistics_iterator=all_stats_data,
-                                               time_intervals=self.time_intervals).get_result_tables()
+        return self.statistics_processor_class(records=records, time_intervals=self.time_intervals).get_result_tables()
 
     def get_statistics_data_for_organization(self, organization_urn: URN) -> Iterator[dict]:
         assert hasattr(self, "linked_in_client_method") and hasattr(self, "time_intervals")

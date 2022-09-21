@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from itertools import chain
 import logging
-from typing import Iterable, Iterator, Sequence
+from typing import Collection, Iterable, Iterator, Sequence
 import os
 import csv
 
@@ -30,6 +30,8 @@ class Table:
         invalid_columns = not self.columns
         if invalid_columns:
             return True
+        if isinstance(self.records, Collection):
+            return len(self.records) > 0
         records_iterator = iter(self.records)
         test_record = next(records_iterator, None)
         if test_record is None:
