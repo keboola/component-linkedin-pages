@@ -198,7 +198,7 @@ class LinkedInPagesExtractor(ComponentBase):
         likes_urn_to_records = {urn: self.client.get_likes_on_post(urn) for urn in posts_urns}
         likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
                                                    table_name="likes",
-                                                   primary_key=["$URN"])
+                                                   primary_key=["URN"])
 
         return [posts_table, comments_table, likes_table]
 

@@ -1,17 +1,22 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import Iterable, MutableMapping
+from typing import Iterable, Mapping, MutableMapping
 from copy import deepcopy
 from itertools import chain
 import re
 
 from inflection import underscore, camelize
+from keboola.utils.header_normalizer import DefaultHeaderNormalizer
 
 from csv_table import Table
 from linkedin.models import URN, StandardizedDataType, TimeIntervals, TimeRange
 
+HEADER_NORMALIZER = DefaultHeaderNormalizer()
 
-def flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '_') -> MutableMapping:
+X_BY_Y_RE = re.compile(r"(\w+)By(\w+)")
+
+
+def flatten_dict(d: Mapping, parent_key: str = '', sep: str = '_'):
     items = []
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
@@ -22,7 +27,15 @@ def flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '_') -> Mut
     return dict(items)
 
 
-def create_table(records: Iterable[dict], table_name: str, primary_key: list[str], flatten_records: bool = True):
+def rename_dict_keys(d: MutableMapping, key_name_mapping: Mapping):
+    return {key_name_mapping.get(key, key): value for key, value in d.items()}
+
+
+def create_table(records: Iterable[dict],
+                 table_name: str,
+                 primary_key: list[str],
+                 flatten_records: bool = True,
+                 normalize_header: bool = True):
     records = iter(records)
     if flatten_records:
         records_processed = (flatten_dict(d) for d in records)
@@ -32,15 +45,21 @@ def create_table(records: Iterable[dict], table_name: str, primary_key: list[str
     if record_processed is None:
         logging.warning(f"API returned no records for output table '{table_name}'.")
         return Table(name=table_name, columns=None, primary_key=primary_key, records=records_processed)
+    records_processed = chain((record_processed,), records_processed)
     columns = list(record_processed.keys())
+    if normalize_header:
+        denormalized_columns = columns
+        columns = HEADER_NORMALIZER.normalize_header(columns)
+        column_name_mapping = {
+            denorm_name: norm_name
+            for denorm_name, norm_name in zip(denormalized_columns, columns)
+            if denorm_name != norm_name
+        }
+        records_processed = (rename_dict_keys(d, column_name_mapping) for d in records_processed)
     for pk in primary_key:
         if pk not in columns:
             raise ValueError(f"Invalid primary key. Primary key element '{pk}' not found in columns: {columns}.")
-    records_processed = chain((record_processed,), records_processed)
     return Table(name=table_name, columns=columns, primary_key=primary_key, records=records_processed)
-
-
-X_BY_Y_RE = re.compile(r"(\w+)By(\w+)")
 
 
 class OrganizationStatisticsProcessor(ABC):
