@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum, unique
@@ -13,6 +14,9 @@ KEY_END = "date_to"
 
 # Config dict constants:
 VAL_LAST_RUN = "last run"
+
+# Other constants:
+MAXIMUM_TIME_RANGE_SIZE = timedelta(days=30 * 14)    # i.e. 14 months
 
 URN_RE = re.compile(r"urn:li:(\w+):(\d+)")
 
@@ -100,15 +104,17 @@ class TimeRange:
 
     @classmethod
     def from_config_dict(cls, d: dict, last_run_datetime_str: str | None = None):
+        end = parse_date_from_string(d[KEY_END])
         if d[KEY_START] == VAL_LAST_RUN:
             if last_run_datetime_str:
                 start = parse_date_from_string(last_run_datetime_str)
             else:
-                raise ValueError("Last run datetime must be specified (in component state)"
-                                 " if 'last run' is used as the start of a time range.")
+                logging.warning("Last run datetime is not specified (in component state)"
+                                " despite 'last run' being used as the start of a time range."
+                                " Using the largest possible time range up to specifed end date.")
+                start = end - MAXIMUM_TIME_RANGE_SIZE
         else:
             start = parse_date_from_string(d[KEY_START])
-        end = parse_date_from_string(d[KEY_END])
         return cls(start=start, end=end)
 
     def to_serializable_dict(self):
