@@ -1,4 +1,5 @@
 from functools import wraps
+import logging
 from typing import Callable, Dict, Iterator, List, ParamSpec
 
 import requests
@@ -92,6 +93,7 @@ class LinkedInClient(HttpClient):
                             **kwargs)
 
     def _handle_pagination(self,
+                           endpoint_path: str,
                            count: int,
                            start: int | None = None,
                            params: dict = None,
@@ -103,6 +105,7 @@ class LinkedInClient(HttpClient):
         if params is None:
             params = dict()
         assert count > 0
+        logging.info(f"Downloading data from API endpoint: {endpoint_path.split('?')[0]}")
         params["count"] = count
         if isinstance(start, int):
             assert start >= 0
@@ -114,13 +117,20 @@ class LinkedInClient(HttpClient):
             total_elements_downloaded = 0
             all_pages_handled = False
             while not all_pages_handled:
-                next_page = self.get(params=params, **kwargs)
+                next_page = self.get(endpoint_path=endpoint_path, params=params, **kwargs)
                 elements: List[Dict] = next_page["elements"]
                 paging_info: Dict[str, int | List[Dict[str, str]]] = next_page["paging"]
                 total_elements = paging_info.get("total")
                 yield from elements
                 actual_page_size = len(elements)
+                logging.info(
+                    f"Dowloaded elements {total_elements_downloaded} to {total_elements_downloaded + actual_page_size}."
+                )
                 total_elements_downloaded += actual_page_size
+                if total_elements:
+                    remaining_elements = total_elements - total_elements_downloaded
+                    if remaining_elements:
+                        logging.info(f"{remaining_elements} remaining.")
                 all_pages_handled = bool((total_elements and total_elements_downloaded >= total_elements) or
                                          (not total_elements and actual_page_size < count))
                 params["start"] += count
