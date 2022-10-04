@@ -102,9 +102,8 @@ class LinkedInPagesExtractor(ComponentBase):
                 logging.warning("Empty resultant time range for time bound statistics (start is the same as end),"
                                 " exiting without data output.")
                 return
-            else:
-                logging.info(f"Downloading {titleize(self.extraction_target.value)}"
-                             f" over the time range: {self.time_intervals.time_range}")
+            logging.info(f"Downloading {titleize(self.extraction_target.value)}" +
+                         (f" over the time range: {self.time_intervals.time_range}" if self.time_intervals else "."))
 
             if self.extraction_target in PAGE_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_page_statistics
