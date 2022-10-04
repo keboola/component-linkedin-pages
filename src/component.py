@@ -4,6 +4,8 @@ from itertools import chain
 import logging
 from typing import Iterable, Iterator
 
+from inflection import titleize
+
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
@@ -100,6 +102,9 @@ class LinkedInPagesExtractor(ComponentBase):
                 logging.warning("Empty resultant time range for time bound statistics (start is the same as end),"
                                 " exiting without data output.")
                 return
+            else:
+                logging.info(f"Downloading {titleize(self.extraction_target.value)}"
+                             f" over the time range: {self.time_intervals.time_range}")
 
             if self.extraction_target in PAGE_STATS_EXTRACTION_TARGETS:
                 self.linked_in_client_method = self.client.get_organization_page_statistics
@@ -152,7 +157,6 @@ class LinkedInPagesExtractor(ComponentBase):
                                                     last_run_datetime_str=self.tmp_state.get(KEY_LAST_RUN_DATETIME)))
         except ValueError as ve:
             raise UserException(f"Invalid time range provided. {ve.args[0]}") from ve
-        logging.info(f"Specified time range parsed to {self.time_intervals.time_range}")
         self.tmp_state[KEY_LAST_RUN_DATETIME] = min(
             datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0, fold=0),
             self.time_intervals.time_range.end).isoformat(timespec="seconds")
