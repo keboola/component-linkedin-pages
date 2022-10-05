@@ -1,1 +1,1 @@
-LinkedIn is an American business and employment-oriented online service that operates via websites and mobile apps.
+This extractor downloads data about organizations, their posts, and statistics about performance of their pages, as well as tables of enumerated types used therein.

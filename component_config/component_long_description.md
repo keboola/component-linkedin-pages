@@ -1,1 +1,1 @@
-todo
+This extractor downloads data about organizations, their posts, and statistics about performance of their pages, as well as tables of enumerated types used therein.

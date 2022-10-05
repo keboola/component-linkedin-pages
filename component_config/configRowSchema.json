@@ -8,7 +8,7 @@
   "properties": {
     "endpoints": {
       "title": "Endpoints",
-      "description": "Select the data you wish to download. Lifetime statistics provide a current totals. Time Bound statistics retrieve data within specified time range.",
+      "description": "Select the data you wish to download. Lifetime statistics provide current totals. Time Bound statistics retrieve data about the specified time range with daily granularity.",
       "type": "string",
       "enum": [
         "page_statistics_time_bound",
@@ -93,7 +93,7 @@
           "default": "full_load",
           "format": "checkbox",
           "title": "Load Type",
-          "description": "If Full load is used, the destination table will be overwritten every run. If incremental load is used, data will be upserted into the destination table.",
+          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental load is used, data will be upserted into the destination table.",
           "propertyOrder": 20
         }
       }
