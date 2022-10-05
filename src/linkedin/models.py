@@ -40,18 +40,18 @@ class URN:
 
 @unique
 class StandardizedDataType(Enum):
-    DEGREES = "degrees"
-    FIELDS_OF_STUDY = "fieldsOfStudy"
+    # DEGREES = "degrees"  # Not needed
+    # FIELDS_OF_STUDY = "fieldsOfStudy"  # Not needed
     FUNCTONS = "functions"
     INDUSTRIES = "industries"
     SENIORITIES = "seniorities"
-    SKILLS = "skills"
-    # SUPER_TITLES = "superTitles"  # Does not work due to 403 API error # TODO?: ask LinkedIn support if needed
-    TITLES = "titles"
-    IAB_CATEGORIES = "iabCategories"
+    # SKILLS = "skills"  # Not needed
+    # SUPER_TITLES = "superTitles"  # Does not work due to 403 API error   # Not needed
+    # TITLES = "titles"  # Not needed
+    # IAB_CATEGORIES = "iabCategories"  # Not needed
     # Locations:
     COUNTRIES = "countries"
-    STATES = "states"
+    # STATES = "states"  # Not needed
     REGIONS = "regions"
 
     @property

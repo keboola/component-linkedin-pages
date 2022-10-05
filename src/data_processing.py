@@ -158,25 +158,25 @@ class PageStatisticsProcessor(OrganizationStatisticsProcessor):
 def create_standardized_data_enum_table(standardized_data_type: StandardizedDataType,
                                         records: Iterable[dict]) -> Table | None:
     def process_enum_element(el: dict) -> dict:
-        if standardized_data_type is StandardizedDataType.SKILLS:
-            processed_element = {"standardizedName": el["standardizedName"], "id": el["id"]}
-        elif standardized_data_type is StandardizedDataType.IAB_CATEGORIES:
-            processed_element = {"displayName": el["displayName"], "iabName": el["iabName"], "id": el["id"]}
-        elif standardized_data_type is StandardizedDataType.COUNTRIES:
+        # if standardized_data_type is StandardizedDataType.SKILLS:
+        #     processed_element = {"standardizedName": el["standardizedName"], "id": el["id"]}
+        # elif standardized_data_type is StandardizedDataType.IAB_CATEGORIES:
+        #     processed_element = {"displayName": el["displayName"], "iabName": el["iabName"], "id": el["id"]}
+        if standardized_data_type is StandardizedDataType.COUNTRIES:
             processed_element = {
                 "name": el["name"]["value"],
                 "id": el["countryCode"],
                 "urn": el["$URN"],
                 "countryCode": el["countryCode"]
             }
-        elif standardized_data_type is StandardizedDataType.STATES:
-            processed_element = {
-                "name": el["name"]["value"],
-                "id": el["stateCode"],
-                "urn": el["$URN"],
-                "stateCode": el["stateCode"],
-                "country": el["country"]
-            }
+        # elif standardized_data_type is StandardizedDataType.STATES:
+        #     processed_element = {
+        #         "name": el["name"]["value"],
+        #         "id": el["stateCode"],
+        #         "urn": el["$URN"],
+        #         "stateCode": el["stateCode"],
+        #         "country": el["country"]
+        #     }
         elif standardized_data_type is StandardizedDataType.REGIONS:
             processed_element = {
                 "name": el["name"]["value"],

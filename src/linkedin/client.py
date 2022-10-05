@@ -236,6 +236,7 @@ class LinkedInClient(HttpClient):
                                                    standardized_data_type: StandardizedDataType,
                                                    start: int | None = None,
                                                    count: int = DEFAULT_PAGE_SIZE):
-        url = ("skills?locale=(language:en,country:US)"
-               if standardized_data_type is StandardizedDataType.SKILLS else standardized_data_type.value)
+        url = standardized_data_type.value
+        # url = ("skills?locale=(language:en,country:US)"
+        #        if standardized_data_type is StandardizedDataType.SKILLS else standardized_data_type.value)
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
