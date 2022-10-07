@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum, unique
 import math
-from typing import Iterator
+from typing import Iterator, Optional
 
 from dateparser import parse
 from inflection import underscore
@@ -107,7 +107,7 @@ class TimeRange:
                    end=milliseconds_since_epoch_to_datetime(d["end"]))
 
     @classmethod
-    def from_config_dict(cls, d: dict, last_run_datetime_str: str | None = None):
+    def from_config_dict(cls, d: dict, last_run_datetime_str: Optional[str] = None):
         end = parse_date_from_string(d[KEY_END])
         if d[KEY_START] == VAL_LAST_RUN:
             if last_run_datetime_str:

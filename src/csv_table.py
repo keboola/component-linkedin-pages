@@ -1,28 +1,27 @@
 from dataclasses import dataclass
 from itertools import chain
 import logging
-from typing import Collection, Iterable, Iterator, Sequence
+from typing import Collection, Iterable, Iterator, Optional, Sequence
 import os
 import csv
 
 from keboola.component.base import ComponentBase
 from keboola.component.dao import TableMetadata
-
-from csv_tools import CachedOrthogonalDictWriter
+from keboola.csvwriter import ElasticDictWriter
 
 
 @dataclass(slots=True)
 class Table:
     name: str
-    columns: list[str] | None
+    columns: Optional[list[str]]
     primary_key: list[str]
     records: Iterable[dict]
-    metadata: TableMetadata | None = None
-    delete_where_spec: dict | None = None
-    file_path: str | None = None
+    metadata: Optional[TableMetadata] = None
+    delete_where_spec: Optional[dict] = None
+    file_path: Optional[str] = None
     _saved: bool = False
     _header_included: bool = False
-    _is_empty: bool | None = None
+    _is_empty: Optional[bool] = None
 
     def _is_empty_internal(self):
         if self._saved:    # Empty tables will never be saved.
@@ -68,8 +67,7 @@ class Table:
                                                           delete_where=self.delete_where_spec)
         os.makedirs(component.tables_out_path, exist_ok=True)
         self.file_path = table_def.full_path
-        with CachedOrthogonalDictWriter(self.file_path, dialect='kbc',
-                                        fieldnames=table_def.columns.copy()) as csv_writer:
+        with ElasticDictWriter(self.file_path, dialect='kbc', fieldnames=table_def.columns.copy()) as csv_writer:
             if include_csv_header:
                 csv_writer.writeheader()
                 self._header_included = True

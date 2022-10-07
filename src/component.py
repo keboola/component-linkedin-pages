@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum, unique
 from itertools import chain
 import logging
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 
 from inflection import titleize
 
@@ -79,7 +79,7 @@ class LinkedInPagesExtractor(ComponentBase):
 
         params: dict = self.configuration.parameters
         self.extraction_target = ExtractionTarget(params[KEY_EXTRACTION_TARGET])
-        organization_ids_str: str | None = params.get(KEY_ORGANIZATION_IDS)
+        organization_ids_str: Optional[str] = params.get(KEY_ORGANIZATION_IDS)
         if organization_ids_str:
             try:
                 organization_ids: list[int] = [int(id_str) for id_str in organization_ids_str.split(",")]
@@ -87,7 +87,7 @@ class LinkedInPagesExtractor(ComponentBase):
                 raise UserException(ve)
         else:
             organization_ids = None
-        time_range: dict | None = params.get(KEY_SYNC_OPTIONS)
+        time_range: Optional[dict] = params.get(KEY_SYNC_OPTIONS)
         self.incremental = LoadType(params[KEY_DESTINATION][KEY_LOAD_TYPE]) is LoadType.INCREMENTAL
         self.debug = bool(params.get(KEY_DEBUG))
 

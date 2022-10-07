@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import Iterable, Mapping, MutableMapping
+from typing import Iterable, Mapping, MutableMapping, Optional
 from copy import deepcopy
 from itertools import chain
 import re
@@ -63,7 +63,7 @@ def create_table(records: Iterable[dict],
 
 
 class OrganizationStatisticsProcessor(ABC):
-    def __init__(self, records: Iterable[dict], time_intervals: TimeIntervals | None):
+    def __init__(self, records: Iterable[dict], time_intervals: Optional[TimeIntervals]):
         self.records_iterator = iter(records)
         self.time_intervals = time_intervals
         self.set_processing_parameters()
@@ -73,7 +73,7 @@ class OrganizationStatisticsProcessor(ABC):
     def set_processing_parameters(self,
                                   statistics_type_name: str,
                                   organization_urn_fieldname: str,
-                                  total_statistics_fieldname: str | None = None):
+                                  total_statistics_fieldname: Optional[str] = None):
         self.time_bound_statistics_table_name: str = f"time_bound_{statistics_type_name}_statistics"
         self.organization_urn_fieldname: str = organization_urn_fieldname
         self.time_bound_statistics_table_name_primary_key: list[str] = [
@@ -156,7 +156,7 @@ class PageStatisticsProcessor(OrganizationStatisticsProcessor):
 
 
 def create_standardized_data_enum_table(standardized_data_type: StandardizedDataType,
-                                        records: Iterable[dict]) -> Table | None:
+                                        records: Iterable[dict]) -> Optional[Table]:
     def process_enum_element(el: dict) -> dict:
         # if standardized_data_type is StandardizedDataType.SKILLS:
         #     processed_element = {"standardizedName": el["standardizedName"], "id": el["id"]}

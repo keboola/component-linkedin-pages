@@ -1,6 +1,6 @@
 from functools import wraps
 import logging
-from typing import Callable, Dict, Iterator, List, ParamSpec
+from typing import Callable, Dict, Iterator, List, Optional, ParamSpec
 
 import requests
 from urllib.parse import quote
@@ -77,7 +77,7 @@ class LinkedInClient(HttpClient):
 
     @response_error_handling
     def get(self,
-            endpoint_path: str | None = None,
+            endpoint_path: Optional[str] = None,
             params: dict = None,
             headers: dict = None,
             is_absolute_path: bool = False,
@@ -95,7 +95,7 @@ class LinkedInClient(HttpClient):
     def _handle_pagination(self,
                            endpoint_path: str,
                            count: int,
-                           start: int | None = None,
+                           start: Optional[int] = None,
                            params: dict = None,
                            **kwargs) -> Iterator[Dict] | Dict:
         """
@@ -146,12 +146,15 @@ class LinkedInClient(HttpClient):
 
     def get_organization_by_vanity_name(self,
                                         vanity_name: str,
-                                        start: int | None = None,
+                                        start: Optional[int] = None,
                                         count: int = DEFAULT_PAGE_SIZE):
         params = {"q": "vanityName", "vanityName": vanity_name}
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG, params=params, count=count, start=start)
 
-    def get_organization_acls(self, role: str | None = None, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
+    def get_organization_acls(self,
+                              role: Optional[str] = None,
+                              start: Optional[int] = None,
+                              count: int = DEFAULT_PAGE_SIZE):
         params = {}
         if role:
             params["q"] = role
@@ -159,8 +162,8 @@ class LinkedInClient(HttpClient):
 
     def get_organization_page_statistics(self,
                                          organization_urn: URN,
-                                         time_intervals: TimeIntervals | None = None,
-                                         start: int | None = None,
+                                         time_intervals: Optional[TimeIntervals] = None,
+                                         start: Optional[int] = None,
                                          count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organization", "organization": str(organization_urn)}
@@ -176,8 +179,8 @@ class LinkedInClient(HttpClient):
 
     def get_organization_follower_statistics(self,
                                              organization_urn: URN,
-                                             time_intervals: TimeIntervals | None = None,
-                                             start: int | None = None,
+                                             time_intervals: Optional[TimeIntervals] = None,
+                                             start: Optional[int] = None,
                                              count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn)}
@@ -193,8 +196,8 @@ class LinkedInClient(HttpClient):
 
     def get_organization_share_statistics(self,
                                           organization_urn: URN,
-                                          time_intervals: TimeIntervals | None = None,
-                                          start: int | None = None,
+                                          time_intervals: Optional[TimeIntervals] = None,
+                                          start: Optional[int] = None,
                                           count: int = DEFAULT_PAGE_SIZE):
         assert organization_urn.entity_type == "organization"
         params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn)}
@@ -215,16 +218,16 @@ class LinkedInClient(HttpClient):
     def get_posts_by_author(self,
                             author_urn: URN,
                             is_dsc: bool,
-                            start: int | None = None,
+                            start: Optional[int] = None,
                             count: int = DEFAULT_PAGE_SIZE):
         params = {"q": "author", "author": author_urn, "isDsc": bool_to_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
-    def get_comments_on_post(self, post_urn: URN, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
+    def get_comments_on_post(self, post_urn: URN, start: Optional[int] = None, count: int = DEFAULT_PAGE_SIZE):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}/comments"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
 
-    def get_likes_on_post(self, post_urn: URN, start: int | None = None, count: int = DEFAULT_PAGE_SIZE):
+    def get_likes_on_post(self, post_urn: URN, start: Optional[int] = None, count: int = DEFAULT_PAGE_SIZE):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}/likes"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
 
@@ -234,7 +237,7 @@ class LinkedInClient(HttpClient):
 
     def get_all_standardized_data_type_enum_values(self,
                                                    standardized_data_type: StandardizedDataType,
-                                                   start: int | None = None,
+                                                   start: Optional[int] = None,
                                                    count: int = DEFAULT_PAGE_SIZE):
         url = standardized_data_type.value
         # url = ("skills?locale=(language:en,country:US)"
