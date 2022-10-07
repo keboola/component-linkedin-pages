@@ -173,11 +173,14 @@ class LinkedInPagesExtractor(ComponentBase):
 
     def get_statistics_data_for_organization(self, organization_urn: URN) -> Iterator[dict]:
         assert hasattr(self, "linked_in_client_method") and hasattr(self, "time_intervals")
-        time_intervals_chunked = self.time_intervals.to_downloadable_chunks()
         try:
-            return chain.from_iterable(
-                self.linked_in_client_method(organization_urn, time_intervals=time_intervals_chunk)
-                for time_intervals_chunk in time_intervals_chunked)
+            if self.time_intervals:
+                time_intervals_chunked = self.time_intervals.to_downloadable_chunks()
+                return chain.from_iterable(
+                    self.linked_in_client_method(organization_urn, time_intervals=time_intervals_chunk)
+                    for time_intervals_chunk in time_intervals_chunked)
+            else:
+                return self.linked_in_client_method(organization_urn)
         except LinkedInClientException as client_exc:
             raise UserException(client_exc) from client_exc
 
