@@ -58,7 +58,7 @@
           "type": "string",
           "title": "Date From",
           "default": "last run",
-          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as 'last run', which will fetch data from the last run of the component. Values always get rouned down to the beginning of the day.",
+          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as 'last run', which will fetch data from the last run of the component; if no previous successful run exists, all data since LinkedIn launch (2003-05-05) get downloaded. Values always get rouned down to the beginning of the day.",
           "propertyOrder": 20
         },
         "date_to": {
