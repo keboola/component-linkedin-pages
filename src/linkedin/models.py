@@ -4,9 +4,12 @@ import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum, unique
 import math
+from typing import Iterator
 
-import dateparser
+from dateparser import parse
 from inflection import underscore
+
+from keboola.utils.date import split_dates_to_chunks
 
 # Time range config dict params:
 KEY_START = "date_from"
@@ -17,6 +20,7 @@ VAL_LAST_RUN = "last run"
 
 # Other constants:
 MAXIMUM_TIME_RANGE_SIZE = timedelta(days=30 * 14)    # i.e. 14 months
+LAST_RUN_MISSING_DEFAULT = datetime(year=2003, month=5, day=5, tzinfo=timezone.utc)    # LinkedIn launched
 
 URN_RE = re.compile(r"urn:li:(\w+):(\d+)")
 
@@ -68,7 +72,7 @@ def milliseconds_since_epoch_to_datetime(milliseconds_since_epoch: int, tz: time
 
 
 def parse_date_from_string(s: str):
-    dt = dateparser.parse(s)
+    dt = parse(s)
     if dt is None:
         raise ValueError(f'Could not parse the string "{s}" into a valid datetime object.'
                          f' Please either use a fixed date such as "1982-09-13" or'
@@ -107,12 +111,12 @@ class TimeRange:
         end = parse_date_from_string(d[KEY_END])
         if d[KEY_START] == VAL_LAST_RUN:
             if last_run_datetime_str:
-                start = parse_date_from_string(last_run_datetime_str)
+                start = datetime.fromisoformat(last_run_datetime_str)
             else:
                 logging.warning("Last run datetime is not specified (in component state)"
                                 " despite 'last run' being used as the start of a time range."
-                                " Using the largest possible time range up to specifed end date.")
-                start = end - MAXIMUM_TIME_RANGE_SIZE
+                                " Downloading data since LinkedIn launch (2003-05-05).")
+                start = LAST_RUN_MISSING_DEFAULT
         else:
             start = parse_date_from_string(d[KEY_START])
         return cls(start=start, end=end)
@@ -124,8 +128,18 @@ class TimeRange:
         return str(self.to_serializable_dict())
 
     @property
+    def timedelta(self):
+        return self.end - self.start
+
+    @property
     def length_in_days(self):
-        return (self.end - self.start) / timedelta(days=1)
+        return self.timedelta / timedelta(days=1)
+
+    @classmethod
+    def from_chunk_dict(cls, d: dict):
+        start = datetime.fromisoformat(d["start_date"])
+        end = datetime.fromisoformat(d["end_date"])
+        return cls(start=start, end=end)
 
 
 @dataclass(slots=True, frozen=True)
@@ -145,3 +159,14 @@ class TimeIntervals:
             return math.ceil(self.time_range.length_in_days / 30)
         else:
             raise ValueError(f"Impossible TimeGranularityType: {self.time_granularity_type}")
+
+    def to_downloadable_chunks(self) -> Iterator["TimeIntervals"]:
+        if self.time_range.timedelta <= MAXIMUM_TIME_RANGE_SIZE:
+            return [self]
+        else:
+            datetime_chunks = split_dates_to_chunks(start_date=self.time_range.start,
+                                                    end_date=self.time_range.end,
+                                                    intv=MAXIMUM_TIME_RANGE_SIZE.days,
+                                                    generator=True)
+            return (self.__class__(time_granularity_type=self.time_granularity_type,
+                                   time_range=TimeRange.from_chunk_dict(chunk_dict)) for chunk_dict in datetime_chunks)
