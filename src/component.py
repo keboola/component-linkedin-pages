@@ -165,7 +165,11 @@ class LinkedInPagesExtractor(ComponentBase):
         records = chain.from_iterable(
             self.get_statistics_data_for_organization(organization_urn=organization_urn)
             for organization_urn in organization_urns)
-        return self.statistics_processor_class(records=records, time_intervals=self.time_intervals).get_result_tables()
+        try:
+            return self.statistics_processor_class(records=records,
+                                                   time_intervals=self.time_intervals).get_result_tables()
+        except LinkedInClientException as client_exc:
+            raise UserException(client_exc) from client_exc
 
     def get_statistics_data_for_organization(self, organization_urn: URN) -> Iterator[dict]:
         assert hasattr(self, "linked_in_client_method") and hasattr(self, "time_intervals")

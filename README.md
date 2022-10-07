@@ -32,7 +32,7 @@ If you need more endpoints, please submit your request to
 ## Configuration
 
 ### Global configuraiton
- - Organizaton IDs (organizations) - [OPT] Comma separated list of organization ids you wish to fetch data from e.g. 123, 234. If left empty data from all organizations will be fetched.
+ - Organizaton IDs (organizations) - [OPT] Comma separated list of organization ids you wish to fetch data from e.g. 123, 234. If left empty, data from all organizations will be fetched.
 
 ### Row configuration
  - Endpoints (endpoints) - [REQ] Select the data you wish to download. Lifetime statistics provide current totals. Time Bound statistics retrieve data about the specified time range with daily granularity. This must be either of these:
@@ -46,7 +46,7 @@ If you need more endpoints, please submit your request to
     - Enumerated Types to download tables of enumerated types used in other data tables.
     - Organizations to download data about organizations themselves.
  - Sync Options (sync_options) [OPT] - Options pertaining only to time bound data extraction:
-    - Date From (date_from) - [REQ] Date from which data is downloaded. Either date in `YYYY-MM-DD` format or dateparser string i.e. `5 days ago`, `1 month ago`, `yesterday`, etc. You can also set this as `last run`, which will fetch data from the last run of the component. Values always get rouned down to the beginning of the day.
+    - Date From (date_from) - [REQ] Date from which data is downloaded. Either date in `YYYY-MM-DD` format or dateparser string i.e. `5 days ago`, `1 month ago`, `yesterday`, etc. You can also set this as `last run`, which will fetch data from the last run of the component; if no previous successful run exists, the maximum time range allowed by the source API (14 months) is used. Values always get rouned down to the beginning of the day.
     - Date To (date_to) - [REQ] Date to which data is downloaded. Either date in `YYYY-MM-DD` format or dateparser string i.e. `5 days ago`, `1 week ago`, `now`, etc. Values always get rouned down to the beginning of the day.
  - Destination (destination) - [REQ] Options specifying how to save extracted data into Keboola Storage:
     - Load Type (load_type) - [REQ] If Full load is used, the destination table will be overwritten every run. If Incremental load is used, data will be upserted into the destination table.
