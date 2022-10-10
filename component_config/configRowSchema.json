@@ -90,8 +90,7 @@
               "Incremental Load"
             ]
           },
-          "default": "full_load",
-          "format": "checkbox",
+          "default": "incremental_load",
           "title": "Load Type",
           "description": "If Full load is used, the destination table will be overwritten every run. If Incremental load is used, data will be upserted into the destination table.",
           "propertyOrder": 20
