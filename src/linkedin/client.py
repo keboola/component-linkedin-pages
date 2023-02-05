@@ -28,7 +28,7 @@ ENDPOINT_REACTIONS = "reactions"
 ENDPOINT_DEGREES = "degrees"
 
 # Other constants:
-DEFAULT_PAGE_SIZE = 1000
+DEFAULT_PAGE_SIZE = 100
 
 
 def auth_header(access_token: str):
