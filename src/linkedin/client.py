@@ -124,7 +124,8 @@ class LinkedInClient(HttpClient):
                 yield from elements
                 actual_page_size = len(elements)
                 logging.info(
-                    f"Downloaded elements {total_elements_downloaded} to {total_elements_downloaded + actual_page_size}."
+                    f"Downloaded elements {total_elements_downloaded} to "
+                    f"{total_elements_downloaded + actual_page_size}."
                 )
                 total_elements_downloaded += actual_page_size
                 if total_elements:
