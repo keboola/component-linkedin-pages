@@ -78,7 +78,7 @@ The primary key is composed of these these columns: `organization`, `timeRange_s
 ### Page Statistics (Lifetime)
 Lifetime Organization Page Statistics are extracted as a table called `total_page_statistics` that contains grand totals, and a set of tables called `page_statistics_by_{enumerated_type}` for each available enumerated type that contain metrics sliced by the given enumerated type dimension. All tables contain all [the fields the API provides](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/organizations/page-statistics?view=li-lms-2022-08&tabs=http#sample-response) unwrapped and flattened as columns (with the underscore `_` used as a separator). 
 
-The primary key is composed of these these columns: `organization`, and, where the data is sliced by an enumerated type, `{enumerated_type}`.
+The primary key is composed of these columns: `organization`, and, where the data is sliced by an enumerated type, `{enumerated_type}`.
 
 ### Follower Statistics (Time Bound)
 Time Bound Organization Follower Statistics are extracted as a table called `time_bound_follower_statistics` that contains all [the fields the API provides](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/organizations/follower-statistics?view=li-lms-2022-08&tabs=http#sample-response-1) unwrapped and flattened as columns (with the underscore `_` used as a separator).

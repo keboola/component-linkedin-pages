@@ -1,1 +1,1 @@
-This extractor downloads data about organizations, their posts, and statistics about performance of their pages, as well as tables of enumerated types used therein.
+LinkedIn Pages is a platform for organizations to post industry updates, job opportunities, information about life at their organization, and much more. Pages can be used by admins and followers when signed in to LinkedIn.com on desktop and mobile devices.
