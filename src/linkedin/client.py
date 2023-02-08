@@ -28,7 +28,8 @@ ENDPOINT_REACTIONS = "reactions"
 ENDPOINT_DEGREES = "degrees"
 
 # Other constants:
-DEFAULT_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 1000
+POST_PAGE_SIZE = 100
 
 
 def auth_header(access_token: str):
@@ -219,7 +220,7 @@ class LinkedInClient(HttpClient):
                             author_urn: URN,
                             is_dsc: bool,
                             start: Optional[int] = None,
-                            count: int = DEFAULT_PAGE_SIZE):
+                            count: int = POST_PAGE_SIZE):
         params = {"q": "author", "author": author_urn, "isDsc": bool_to_param_string(is_dsc)}
         return self._handle_pagination(endpoint_path=ENDPOINT_POSTS, count=count, start=start, params=params)
 
