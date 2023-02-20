@@ -86,8 +86,8 @@
           ],
           "options": {
             "enum_titles": [
-              "full Load",
-              "incremental Load"
+              "full load",
+              "incremental load"
             ]
           },
           "default": "incremental_load",
