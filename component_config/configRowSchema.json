@@ -8,7 +8,7 @@
   "properties": {
     "endpoints": {
       "title": "Endpoints",
-      "description": "Select the data you wish to download. Lifetime statistics provide current totals. Time Bound statistics retrieve data about the specified time range with daily granularity.",
+      "description": "Select the data you wish to download. Lifetime statistics provide current totals. Time-Bound statistics retrieve data about the specified time range with daily granularity.",
       "type": "string",
       "enum": [
         "page_statistics_time_bound",
@@ -23,11 +23,11 @@
       ],
       "options": {
         "enum_titles": [
-          "Page Statistics (Time Bound)",
+          "Page Statistics (Time-Bound)",
           "Page Statistics (Lifetime)",
-          "Follower Statistics (Time Bound)",
+          "Follower Statistics (Time-Bound)",
           "Follower Statistics (Lifetime)",
-          "Share Statistics (Time Bound)",
+          "Share Statistics (Time-Bound)",
           "Share Statistics (Lifetime)",
           "Posts",
           "Enumerated Types",
@@ -58,14 +58,14 @@
           "type": "string",
           "title": "Date From",
           "default": "last run",
-          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as 'last run', which will fetch data from the last run of the component; if no previous successful run exists, all data since LinkedIn launch (2003-05-05) get downloaded. Values always get rouned down to the beginning of the day.",
+          "description": "Date from which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, yesterday, etc. You can also set this as 'last run', which will fetch data from the last run of the component; if no previous successful run exists, all data since LinkedIn launch (2003-05-05) are downloaded. Values always get rounded down to the beginning of the day.",
           "propertyOrder": 20
         },
         "date_to": {
           "type": "string",
           "title": "Date to",
           "default": "now",
-          "description": "Date to which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, now, etc. Values always get rouned down to the beginning of the day.",
+          "description": "Date to which data is downloaded. Either date in YYYY-MM-DD format or dateparser string i.e. 5 days ago, 1 month ago, now, etc. Values always get rounded down to the beginning of the day.",
           "propertyOrder": 30
         }
       }
@@ -86,13 +86,13 @@
           ],
           "options": {
             "enum_titles": [
-              "Full Load",
-              "Incremental Load"
+              "full Load",
+              "incremental Load"
             ]
           },
           "default": "incremental_load",
           "title": "Load Type",
-          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental load is used, data will be upserted into the destination table.",
+          "description": "If full load is used, the destination table will be overwritten every run. If incremental load is used, data will be upserted into the destination table.",
           "propertyOrder": 20
         }
       }

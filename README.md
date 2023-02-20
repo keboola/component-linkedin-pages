@@ -45,7 +45,7 @@ If you need more endpoints, please submit your request to
     - Posts to download data about posts, their comments, and their likes.
     - Enumerated Types to download tables of enumerated types used in other data tables.
     - Organizations to download data about organizations themselves.
- - Sync Options (sync_options) [OPT] - Options pertaining only to time bound data extraction:
+ - Sync Options (sync_options) [REQ] - Options pertaining only to time bound data extraction:
     - Date From (date_from) - [REQ] Date from which data is downloaded. Either date in `YYYY-MM-DD` format or dateparser string i.e. `5 days ago`, `1 month ago`, `yesterday`, etc. You can also set this as `last run`, which will fetch data from the last run of the component; if no previous successful run exists, all data since LinkedIn launch (2003-05-05) get downloaded. Values always get rounded down to the beginning of the day.
     - Date To (date_to) - [REQ] Date to which data is downloaded. Either date in `YYYY-MM-DD` format or dateparser string i.e. `5 days ago`, `1 week ago`, `now`, etc. Values always get rounded down to the beginning of the day.
  - Destination (destination) - [REQ] Options specifying how to save extracted data into Keboola Storage:
@@ -55,14 +55,15 @@ If you need more endpoints, please submit your request to
 This sample configuration will download daily time bound Organization Follower Statistics about organizations with IDs equal to 69746054 and 76989094 from the day of the last component run up to today (excluded, i. e. today's possibly incomplete data will **not** be included), and upsert the resultant data into the Keboola Storage table called `time_bound_follower_statistics`.
 ```json
 {
-    "organizations": "69746054, 76989094",
-    "endpoints": "follower_statistics_time_bound",
-    "sync_options": {
-        "date_from": "last run",
-        "date_to": "today"
-    },
-    "destination": {
-        "load_type": "incremental_load"
+   "organizations": "69746054, 76989094",
+   "endpoints": "follower_statistics_time_bound",
+   "sync_options": {
+      "date_from": "last run",
+      "date_to": "today"
+   },
+   "destination": {
+      "load_type": "incremental_load"
+   }
 }
 ```
 

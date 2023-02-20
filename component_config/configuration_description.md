@@ -32,6 +32,7 @@ This sample configuration will download daily time bound Organization Follower S
     },
     "destination": {
         "load_type": "incremental_load"
+    }
 }
 ```
 
@@ -39,7 +40,7 @@ This sample configuration will download daily time bound Organization Follower S
 The output of each configuration row is 1 to N tables with hardcoded name(s) as specified below for each case of the Endpoints row configuration option. Where present, time range columns' values are converted from [Unix time](https://en.wikipedia.org/wiki/Unix_time) into [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) encoded date and time strings. Tables are **not** created if they would end up empty.
 
 <!-- List of tables, foreign keys, schema. -->
-### Page Statistics (Time Bound)
+### Page Statistics (Time-Bound)
 Time Bound Organization Page Statistics are extracted as a table called `time_bound_page_statistics` that contains all [the fields the API provides](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/organizations/page-statistics?view=li-lms-2022-08&tabs=http#sample-response-1) unwrapped and flattened as columns (with the underscore `_` used as a separator).
 
 The primary key is composed of these these columns: `organization`, `timeRange_start`, `timeRange_end`.
@@ -49,7 +50,7 @@ Lifetime Organization Page Statistics are extracted as a table called `total_pag
 
 The primary key is composed of these columns: `organization`, and, where the data is sliced by an enumerated type, `{enumerated_type}`.
 
-### Follower Statistics (Time Bound)
+### Follower Statistics (Time-Bound)
 Time Bound Organization Follower Statistics are extracted as a table called `time_bound_follower_statistics` that contains all [the fields the API provides](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/organizations/follower-statistics?view=li-lms-2022-08&tabs=http#sample-response-1) unwrapped and flattened as columns (with the underscore `_` used as a separator).
 
 The primary key is composed of these these columns: `organizationalEntity`, `timeRange_start`, `timeRange_end`.
@@ -59,7 +60,7 @@ Lifetime Organization Follower Statistics are extracted as a set of tables calle
 
 The primary key is composed of these these columns: `organizationalEntity`, and, where the data is sliced by an enumerated type, `{enumerated_type}`.
 
-### Share Statistics (Time Bound)
+### Share Statistics (Time-Bound)
 Time Bound Organization Share Statistics are extracted as a table called `time_bound_share_statistics` that contains all [the fields the API provides](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/organizations/share-statistics?view=li-lms-2022-08&tabs=http#share-statistics-data-schema) unwrapped and flattened as columns (with the underscore `_` used as a separator).
 
 The primary key is composed of these these columns: `organizationalEntity`, `timeRange_start`, `timeRange_end`.

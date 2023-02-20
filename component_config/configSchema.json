@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "title": "Linkedin Organisation Configuration",
+  "title": "LinkedIn Organization Configuration",
   "properties": {
     "organizations": {
       "title": "Organizaton IDs",
