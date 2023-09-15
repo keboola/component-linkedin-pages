@@ -1,20 +1,18 @@
+import logging
 from datetime import datetime, timezone
 from enum import Enum, unique
 from itertools import chain
-import logging
 from typing import Iterable, Iterator, Optional
 
 from inflection import titleize
-
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
-from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
-                      StandardizedDataType)
-
+from csv_table import Table
 from data_processing import (FollowerStatisticsProcessor, PageStatisticsProcessor, ShareStatisticsProcessor,
                              create_standardized_data_enum_table, create_posts_subobject_table, create_table)
-from csv_table import Table
+from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeIntervals, TimeGranularityType, TimeRange,
+                      StandardizedDataType)
 
 # Global config keys:
 KEY_DEBUG = "debug"
@@ -200,7 +198,7 @@ class LinkedInPagesExtractor(ComponentBase):
         if posts_table.is_empty:
             logging.warning("No posts found for any available/specified organization.")
         posts_table.save_as_csv_with_manifest(self, incremental=self.incremental, include_csv_header=self.debug)
-        posts_urns = list(    # Keeping the posts URNs in memory here - may cause problems if number of posts is high
+        posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
             URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
 
         comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
@@ -221,6 +219,9 @@ class LinkedInPagesExtractor(ComponentBase):
         return [create_table(records=organization_records, table_name="organizations", primary_key=["id"])]
 
     def get_access_token(self) -> str:
+        if not self.configuration.oauth_credentials:
+            raise UserException("The configuration is not authorized. Please authorize the configuration first.")
+
         if "access_token" not in self.configuration.oauth_credentials["data"]:
             raise UserException("Access token not available. Retry Authorization process")
         return self.configuration.oauth_credentials["data"]["access_token"]
