@@ -5,7 +5,7 @@ from itertools import chain
 from typing import Iterable, Iterator, Optional
 
 from inflection import titleize
-from keboola.component.base import ComponentBase
+from keboola.component.base import ComponentBase, sync_action
 from keboola.component.exceptions import UserException
 
 from csv_table import Table
@@ -77,6 +77,7 @@ class LinkedInPagesExtractor(ComponentBase):
 
         params: dict = self.configuration.parameters
         self.extraction_target = ExtractionTarget(params[KEY_EXTRACTION_TARGET])
+        #TODO handle dicts from async func
         organization_ids_str: Optional[str] = params.get(KEY_ORGANIZATION_IDS)
         if organization_ids_str:
             try:
@@ -225,6 +226,16 @@ class LinkedInPagesExtractor(ComponentBase):
         if "access_token" not in self.configuration.oauth_credentials["data"]:
             raise UserException("Access token not available. Retry Authorization process")
         return self.configuration.oauth_credentials["data"]["access_token"]
+
+    @sync_action('get_organizations')
+    def get_organizations(self):
+        try:
+            organization_acls = list(self.client.get_organization_acls("roleAssignee"))
+        except LinkedInClientException as client_exc:
+            raise UserException(client_exc) from client_exc
+        organization_urns = [URN.from_str(org_acl["organization"]) for org_acl in organization_acls]
+
+        return organization_urns
 
 
 if __name__ == "__main__":

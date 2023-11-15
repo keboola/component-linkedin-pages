@@ -7,6 +7,26 @@
       "type": "string",
       "propertyOrder": 10,
       "description": "Comma-separated list of organization ids you wish to fetch data from, e.g., 123, 234. If left empty, data from all organizations will be fetched."
+    },
+
+    "test_columns": {
+      "type": "array",
+      "propertyOrder": 10,
+      "description": "Organizations available under the account",
+      "items": {
+        "enum": [],
+        "type": "string"
+      },
+      "format": "select",
+      "options": {
+        "async": {
+          "label": "Load organizations",
+          "action": "get_organizations"
+        }
+      },
+      "uniqueItems": true
     }
+
+
   }
 }
