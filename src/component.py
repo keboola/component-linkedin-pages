@@ -2,11 +2,12 @@ import logging
 from datetime import datetime, timezone
 from enum import Enum, unique
 from itertools import chain
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, Set
 
 from inflection import titleize
-from keboola.component.base import ComponentBase
+from keboola.component.base import ComponentBase, sync_action
 from keboola.component.exceptions import UserException
+from keboola.component.sync_actions import SelectElement
 
 from csv_table import Table
 from data_processing import (FollowerStatisticsProcessor, PageStatisticsProcessor, ShareStatisticsProcessor,
@@ -17,6 +18,7 @@ from linkedin import (LinkedInClient, LinkedInClientException, URN, TimeInterval
 # Global config keys:
 KEY_DEBUG = "debug"
 KEY_ORGANIZATION_IDS = "organizations"
+KEY_ORGANIZATIONS_ARRAY = "organizations_array"
 
 # Row config keys:
 KEY_EXTRACTION_TARGET = "endpoints"
@@ -70,21 +72,25 @@ STATISTICS_REPORT_GRANULARITY = TimeGranularityType.DAY
 
 
 class LinkedInPagesExtractor(ComponentBase):
+
     def run(self) -> None:
+
         self.tmp_state = self.get_state_file()
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
         params: dict = self.configuration.parameters
         self.extraction_target = ExtractionTarget(params[KEY_EXTRACTION_TARGET])
-        organization_ids_str: Optional[str] = params.get(KEY_ORGANIZATION_IDS)
-        if organization_ids_str:
-            try:
-                organization_ids: list[int] = [int(id_str) for id_str in organization_ids_str.split(",")]
-            except ValueError as ve:
-                raise UserException(ve)
-        else:
-            organization_ids = None
+
+        organization_ids = set()
+
+        # Legacy UI element for BC compatibility
+        if organization_ids_str := params.get(KEY_ORGANIZATION_IDS):
+            organization_ids.update(organization_ids_str.split(","))
+
+        if organization_array_str := params.get(KEY_ORGANIZATIONS_ARRAY):
+            organization_ids.update(organization_array_str)
+
         time_range: Optional[dict] = params.get(KEY_SYNC_OPTIONS)
         self.incremental = LoadType(params[KEY_DESTINATION][KEY_LOAD_TYPE]) is LoadType.INCREMENTAL
         self.debug = bool(params.get(KEY_DEBUG))
@@ -130,9 +136,9 @@ class LinkedInPagesExtractor(ComponentBase):
         if self.tmp_state:
             self.write_state_file(self.tmp_state)
 
-    def get_organization_urns(self, organization_ids: list[int]):
+    def get_organization_urns(self, organization_ids: Set[str]):
         if organization_ids:
-            organization_urns = [URN(entity_type="organization", id=id) for id in organization_ids]
+            organization_urns = [URN(entity_type="organization", id=int(id)) for id in organization_ids]
         else:
             try:
                 organization_acls = list(self.client.get_organization_acls("roleAssignee"))
@@ -225,6 +231,25 @@ class LinkedInPagesExtractor(ComponentBase):
         if "access_token" not in self.configuration.oauth_credentials["data"]:
             raise UserException("Access token not available. Retry Authorization process")
         return self.configuration.oauth_credentials["data"]["access_token"]
+
+    @sync_action('get_organizations')
+    def get_organizations(self):
+
+        access_token = self.get_access_token()
+        client = LinkedInClient(access_token)
+
+        try:
+            organization_acls = list(client.get_organization_acls(
+                "roleAssignee",
+                projection="(*,elements*(*,organization~(vanityName)))"))
+
+        except LinkedInClientException as client_exc:
+            raise UserException(client_exc) from client_exc
+
+        return [SelectElement(
+            value=(org_id := str(org_acl["organization"].split(':')[-1])),
+            label=f'{org_acl["organization~"]["vanityName"]} ({org_id})')
+                for org_acl in organization_acls]
 
 
 if __name__ == "__main__":
