@@ -6,7 +6,7 @@
       "title": "Organization IDs",
       "type": "array",
       "propertyOrder": 10,
-      "description": "Organisations to include in export, if empty downloads all that are available.",
+      "description": "Organisations to include in export; if empty, all are downloaded.",
       "items": {
         "enum": [],
         "type": "string"
