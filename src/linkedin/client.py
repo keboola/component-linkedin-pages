@@ -125,15 +125,11 @@ class LinkedInClient(HttpClient):
                 total_elements = paging_info.get("total")
                 yield from elements
                 actual_page_size = len(elements)
-                logging.debug(paging_info)
                 logging.info(
                     f"Downloaded elements {total_elements_downloaded} to "
                     f"{total_elements_downloaded + actual_page_size}."
                 )
                 total_elements_downloaded += actual_page_size
-
-                logging.debug(f"total_el: {total_elements}, actual_page_size:{actual_page_size}")
-                logging.debug(elements)
                 if total_elements:
                     remaining_elements = total_elements - total_elements_downloaded
                     if remaining_elements:
