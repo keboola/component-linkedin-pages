@@ -154,15 +154,18 @@ class LinkedInClient(HttpClient):
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG, params=params, count=count, start=start)
 
     def get_organization_acls(self,
+                              query: Optional[str] = None,
                               role: Optional[str] = None,
                               start: Optional[int] = None,
                               count: int = DEFAULT_PAGE_SIZE,
                               projection: Optional[str] = None):
         params = {}
         if role:
-            params["q"] = role
+            params["role"] = role
         if projection:
             params["projection"] = projection
+        if query:
+            params["q"] = query
 
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG_ACL, count=count, start=start, params=params)
 

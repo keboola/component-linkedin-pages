@@ -141,7 +141,7 @@ class LinkedInPagesExtractor(ComponentBase):
             organization_urns = [URN(entity_type="organization", id=int(id)) for id in organization_ids]
         else:
             try:
-                organization_acls = list(self.client.get_organization_acls("roleAssignee"))
+                organization_acls = list(self.client.get_organization_acls(query="roleAssignee"))
             except LinkedInClientException as client_exc:
                 raise UserException(client_exc) from client_exc
             organization_urns = [URN.from_str(org_acl["organization"]) for org_acl in organization_acls]
@@ -240,7 +240,8 @@ class LinkedInPagesExtractor(ComponentBase):
 
         try:
             organization_acls = list(client.get_organization_acls(
-                "roleAssignee",
+                query="roleAssignee",
+                role="ADMINISTRATOR",
                 projection="(*,elements*(*,organization~(vanityName)))"))
 
         except LinkedInClientException as client_exc:
