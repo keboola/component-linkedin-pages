@@ -158,7 +158,8 @@ class LinkedInClient(HttpClient):
                               role: Optional[str] = None,
                               start: Optional[int] = None,
                               count: int = DEFAULT_PAGE_SIZE,
-                              projection: Optional[str] = None):
+                              projection: Optional[str] = None,
+                              state: Optional[str] = None):
         params = {}
         if role:
             params["role"] = role
@@ -166,6 +167,8 @@ class LinkedInClient(HttpClient):
             params["projection"] = projection
         if query:
             params["q"] = query
+        if state:
+            params["state"] = state
 
         return self._handle_pagination(endpoint_path=ENDPOINT_ORG_ACL, count=count, start=start, params=params)
 
