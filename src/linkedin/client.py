@@ -51,6 +51,7 @@ def response_error_handling(api_call: Callable[P, requests.Response]) -> Callabl
     """
     Function, that handles response handling of HTTP requests. The one from the library doesn't output all info.
     """
+
     @wraps(api_call)
     def wrapper(*args, **kwargs):
         try:
@@ -133,8 +134,7 @@ class LinkedInClient(HttpClient):
                     remaining_elements = total_elements - total_elements_downloaded
                     if remaining_elements:
                         logging.info(f"{remaining_elements} remaining.")
-                all_pages_handled = bool((total_elements and total_elements_downloaded >= total_elements) or
-                                         (not total_elements and actual_page_size < count))
+                all_pages_handled = actual_page_size == 0
                 params["start"] += count
 
         return generator()
