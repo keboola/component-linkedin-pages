@@ -109,7 +109,6 @@ class LinkedInClient(HttpClient):
         assert count > 0
         logging.info(f"Downloading data from API endpoint: {endpoint_path.split('?')[0]}")
         params["count"] = count
-        logging.info(f"Count: {count}")
         if isinstance(start, int):
             assert start >= 0
             params["start"] = start
@@ -129,10 +128,6 @@ class LinkedInClient(HttpClient):
                 logging.info(
                     f"Downloaded elements {total_elements_downloaded} to "
                     f"{total_elements_downloaded + actual_page_size}."
-                )
-                logging.info(
-                    f"Actual page size: {actual_page_size} "
-                    f"Total elements: {total_elements} "
                 )
                 total_elements_downloaded += actual_page_size
                 if total_elements:
