@@ -134,7 +134,7 @@ class LinkedInClient(HttpClient):
                     remaining_elements = total_elements - total_elements_downloaded
                     if remaining_elements:
                         logging.info(f"{remaining_elements} remaining.")
-                all_pages_handled = actual_page_size == 0
+                all_pages_handled = actual_page_size == 0 or actual_page_size < count
                 params["start"] += count
 
         return generator()
