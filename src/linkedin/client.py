@@ -59,10 +59,9 @@ def response_error_handling(api_call: Callable[P, requests.Response]) -> Callabl
             r.raise_for_status()
         except requests.HTTPError as e:
             response: requests.Response = e.response
-            orig_message: str = e.args[0]
             if response.status_code in (400, 401, 402, 403):
-                raise LinkedInClientException(orig_message +
-                                              (f"\nResponse content: {response.text}" if response.text else "")) from e
+                error_message = response.json().get('message')
+                raise LinkedInClientException(error_message) from e
             else:
                 raise
         else:
