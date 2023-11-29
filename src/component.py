@@ -213,7 +213,7 @@ class LinkedInPagesExtractor(ComponentBase):
 
         for post_urn in posts_urns[:20]:
             try:
-                shares = self.client.get_shares_on_post(post_urn, organization_urn=None)
+                shares = self.client.get_comments_on_post(post_urn)
                 shares_urn_to_records[post_urn] = shares
                 logging.info(shares)
 
