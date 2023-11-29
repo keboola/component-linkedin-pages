@@ -209,15 +209,6 @@ class LinkedInPagesExtractor(ComponentBase):
         posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
             URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
 
-        comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
-        comments_table = create_posts_subobject_table(urn_to_records_dict=comments_urn_to_records,
-                                                      table_name="comments",
-                                                      primary_key=["id"])
-
-        likes_urn_to_records = {urn: self.client.get_likes_on_post(urn) for urn in posts_urns}
-        likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
-                                                   table_name="likes",
-                                                   primary_key=["URN"])
         shares_urn_to_records = {}
 
         for post_urn in posts_urns[:20]:
@@ -232,6 +223,16 @@ class LinkedInPagesExtractor(ComponentBase):
         shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
                                                     table_name="shares",
                                                     primary_key=["URN"])
+
+        comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
+        comments_table = create_posts_subobject_table(urn_to_records_dict=comments_urn_to_records,
+                                                      table_name="comments",
+                                                      primary_key=["id"])
+
+        likes_urn_to_records = {urn: self.client.get_likes_on_post(urn) for urn in posts_urns}
+        likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
+                                                   table_name="likes",
+                                                   primary_key=["URN"])
 
         return [posts_table, comments_table, likes_table, shares_table]
 
