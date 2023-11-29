@@ -224,6 +224,7 @@ class LinkedInPagesExtractor(ComponentBase):
             try:
                 shares = self.client.get_shares_on_post(post_urn, organization_urn=None)
                 shares_urn_to_records[post_urn] = shares
+                logging.info(shares)
 
             except LinkedInClientException:
                 logging.error(f'Failed to get shares for post no: ({post_urn})')
