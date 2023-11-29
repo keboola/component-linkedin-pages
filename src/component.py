@@ -220,7 +220,7 @@ class LinkedInPagesExtractor(ComponentBase):
                                                    primary_key=["URN"])
         shares_urn_to_records = {}
 
-        for post_urn in posts_urns:
+        for post_urn in posts_urns[:20]:
             try:
                 shares = self.client.get_shares_on_post(post_urn, organization_urn=None)
                 shares_urn_to_records[post_urn] = shares
