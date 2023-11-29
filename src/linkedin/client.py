@@ -242,6 +242,16 @@ class LinkedInClient(HttpClient):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}/likes"
         return self._handle_pagination(endpoint_path=url, count=count, start=start)
 
+    def get_shares_on_post(self,
+                           post_urn: URN,
+                           start: Optional[int] = None,
+                           count: int = DEFAULT_PAGE_SIZE,
+                           organization_urn: Optional[URN] = None):
+
+        url = ENDPOINT_ORG_SHARE_STATS
+        params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn), "ugcPosts": post_urn}
+        return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
+
     def get_social_action_summary_on_post(self, post_urn: URN):
         url = f"{ENDPOINT_SOCIAL_ACTIONS}/{quote(str(post_urn))}"
         return self.get(endpoint_path=url)

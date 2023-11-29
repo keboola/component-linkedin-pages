@@ -198,7 +198,8 @@ def create_standardized_data_enum_table(standardized_data_type: StandardizedData
                         flatten_records=False)
 
 
-def create_posts_subobject_table(urn_to_records_dict: dict[URN, Iterable[dict]], table_name: str,
+def create_posts_subobject_table(urn_to_records_dict: dict[URN, Iterable[dict]],
+                                 table_name: str,
                                  primary_key: list[str]):
     def process_record(record: dict, post_urn: URN):
         processed_rec = record.copy()
