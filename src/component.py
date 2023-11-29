@@ -278,4 +278,4 @@ if __name__ == "__main__":
         exit(1)
     except Exception as exc:
         logging.exception(exc)
-        exit(2)
+        exit(1)
