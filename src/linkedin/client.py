@@ -12,7 +12,7 @@ from .models import URN, TimeIntervals, StandardizedDataType
 BASE_URL = "https://api.linkedin.com"
 API_VERSION = "v2"
 
-DEFAULT_HTTP_HEADER = {"X-Restli-Protocol-Version": "2.0.0", "LinkedIn-Version": "202208"}
+DEFAULT_HTTP_HEADER = {"LinkedIn-Version": "202208"}
 
 ENDPOINT_ORG = "organizations"
 ENDPOINT_ORG_ACL = "organizationAcls"
