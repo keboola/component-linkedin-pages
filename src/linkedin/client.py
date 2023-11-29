@@ -250,6 +250,7 @@ class LinkedInClient(HttpClient):
 
         url = ENDPOINT_ORG_SHARE_STATS
         params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn), "ugcPosts": post_urn}
+        logging.info(params)
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
     def get_social_action_summary_on_post(self, post_urn: URN):
