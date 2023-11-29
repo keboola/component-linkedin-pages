@@ -12,7 +12,7 @@ from .models import URN, TimeIntervals, StandardizedDataType
 BASE_URL = "https://api.linkedin.com"
 API_VERSION = "v2"
 
-DEFAULT_HTTP_HEADER = {"LinkedIn-Version": "202208"}
+DEFAULT_HTTP_HEADER = {"X-Restli-Protocol-Version": "2.0.0", "LinkedIn-Version": "202208"}
 
 ENDPOINT_ORG = "organizations"
 ENDPOINT_ORG_ACL = "organizationAcls"
@@ -245,11 +245,10 @@ class LinkedInClient(HttpClient):
     def get_shares_on_post(self,
                            post_urn: URN,
                            start: Optional[int] = None,
-                           count: int = DEFAULT_PAGE_SIZE,
-                           organization_urn: Optional[URN] = None):
+                           count: int = DEFAULT_PAGE_SIZE):
 
         url = ENDPOINT_ORG_SHARE_STATS
-        params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn), "ugcPosts": post_urn}
+        params = {"q": "organizationalEntity", "ugcPosts": post_urn}
         logging.info(params)
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
