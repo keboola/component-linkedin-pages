@@ -218,19 +218,21 @@ class LinkedInPagesExtractor(ComponentBase):
         likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
                                                    table_name="likes",
                                                    primary_key=["URN"])
+        shares_urn_to_records = {}
 
-        try:
-            shares_urn_to_records = {post_urn: self.client.get_shares_on_post(post_urn,
-                                                                              organization_urn=None)
-                                     for post_urn in posts_urns}
+        for post_urn in posts_urns:
+            try:
+                shares = self.client.get_shares_on_post(post_urn, organization_urn=None)
+                shares_urn_to_records[post_urn] = shares
 
-            shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
-                                                        table_name="shares",
-                                                        primary_key=["URN"])
+            except LinkedInClientException:
+                logging.error(f'Failed to get shares for post no: ({post_urn})')
 
-            return [posts_table, comments_table, likes_table, shares_table]
-        except LinkedInClientException as client_exc:
-            raise UserException(client_exc) from client_exc
+        shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
+                                                    table_name="shares",
+                                                    primary_key=["URN"])
+
+        return [posts_table, comments_table, likes_table, shares_table]
 
     def get_organizations_table(self, organization_urns: Iterable[URN]) -> list[Table]:
         organization_records = (
