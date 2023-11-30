@@ -217,6 +217,7 @@ class LinkedInPagesExtractor(ComponentBase):
                 processed_record["id"].split(':')[-1] for processed_record in posts_records)
 
             for post_urn in posts_urns[:20]:
+                logging.info(type(post_urn))
                 if post_urn.isdigit():
                     try:
                         shares = self.client.get_shares_on_post(organization_urn=org_urn,
