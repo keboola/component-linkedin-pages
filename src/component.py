@@ -199,7 +199,6 @@ class LinkedInPagesExtractor(ComponentBase):
         ]
 
     def get_all_posts_based_tables(self, organization_urns: Iterable[URN]) -> list[Table]:
-        first_urn = organization_urns[0]
         posts_records = (chain.from_iterable(
             chain(self.client.get_posts_by_author(urn, is_dsc=True), self.client.get_posts_by_author(urn, is_dsc=False))
             for urn in organization_urns))
