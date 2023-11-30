@@ -213,7 +213,7 @@ class LinkedInPagesExtractor(ComponentBase):
 
         for org_urn in organization_urns:
             posts_urns = self.client.get_posts_by_author(org_urn, is_dsc=True)
-            for post_urn in posts_urns[:20]:
+            for post_urn in posts_urns:
                 try:
                     shares = self.client.get_shares_on_post(organization_urn=org_urn,
                                                             post_urn=post_urn)
