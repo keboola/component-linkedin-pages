@@ -246,10 +246,10 @@ class LinkedInClient(HttpClient):
                            post_urn: URN,
                            start: Optional[int] = None,
                            count: int = DEFAULT_PAGE_SIZE,
-                           organization_urn: Optional[URN] = None):
+                           organization_urn: Optional[str] = None):
 
         url = ENDPOINT_ORG_SHARE_STATS
-        params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn), "ugcPosts": post_urn}
+        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn, "ugcPosts": post_urn}
         logging.info(params)
         logging.info(f'Post urn: {post_urn}')
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
