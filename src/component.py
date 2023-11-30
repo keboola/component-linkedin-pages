@@ -214,7 +214,7 @@ class LinkedInPagesExtractor(ComponentBase):
         for org_urn in organization_urns:
             posts_records = self.client.get_posts_by_author(org_urn, is_dsc=True)
             posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
-                URN.from_str(processed_record["id"]) for processed_record in posts_records)
+                processed_record["id"] for processed_record in posts_records)
 
             for post_urn in posts_urns:
                 try:
