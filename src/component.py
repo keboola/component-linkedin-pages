@@ -199,6 +199,7 @@ class LinkedInPagesExtractor(ComponentBase):
         ]
 
     def get_all_posts_based_tables(self, organization_urns: Iterable[URN]) -> list[Table]:
+        first_urn = organization_urns[0]
         posts_records = (chain.from_iterable(
             chain(self.client.get_posts_by_author(urn, is_dsc=True), self.client.get_posts_by_author(urn, is_dsc=False))
             for urn in organization_urns))
@@ -211,14 +212,17 @@ class LinkedInPagesExtractor(ComponentBase):
 
         shares_urn_to_records = {}
 
-        for post_urn in posts_urns[:20]:
-            try:
-                shares = self.client.get_shares_on_post(post_urn)
-                shares_urn_to_records[post_urn] = shares
-                logging.info(shares)
+        for org_urn in organization_urns:
+            posts_urns = self.client.get_posts_by_author(org_urn, is_dsc=True)
+            for post_urn in posts_urns[:20]:
+                try:
+                    shares = self.client.get_shares_on_post(organization_urn=org_urn,
+                                                            post_urn=post_urn)
+                    shares_urn_to_records[post_urn] = shares
+                    logging.info(shares)
 
-            except LinkedInClientException:
-                logging.error(f'Failed to get shares for post no: ({post_urn})')
+                except LinkedInClientException:
+                    logging.error(f'Failed to get shares for post no: ({post_urn})')
 
         shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
                                                     table_name="shares",

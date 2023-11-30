@@ -245,10 +245,11 @@ class LinkedInClient(HttpClient):
     def get_shares_on_post(self,
                            post_urn: URN,
                            start: Optional[int] = None,
-                           count: int = DEFAULT_PAGE_SIZE):
+                           count: int = DEFAULT_PAGE_SIZE,
+                           organization_urn: Optional[URN] = None):
 
         url = ENDPOINT_ORG_SHARE_STATS
-        params = {"q": "organizationalEntity", "ugcPosts": post_urn}
+        params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn), "ugcPosts": post_urn}
         logging.info(params)
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
 
