@@ -216,7 +216,7 @@ class LinkedInPagesExtractor(ComponentBase):
             posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
                 processed_record["id"].split(':')[-1] for processed_record in posts_records)
 
-            for post_urn in posts_urns:
+            for post_urn in posts_urns[:20]:
                 try:
                     shares = self.client.get_shares_on_post(organization_urn=org_urn,
                                                             post_urn=post_urn)
