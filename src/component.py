@@ -217,14 +217,17 @@ class LinkedInPagesExtractor(ComponentBase):
                 processed_record["id"].split(':')[-1] for processed_record in posts_records)
 
             for post_urn in posts_urns[:20]:
-                try:
-                    shares = self.client.get_shares_on_post(organization_urn=org_urn,
-                                                            post_urn=post_urn)
-                    shares_urn_to_records[post_urn] = shares
-                    logging.info(shares)
+                if post_urn.isdigit():
+                    try:
+                        shares = self.client.get_shares_on_post(organization_urn=org_urn,
+                                                                post_urn=post_urn)
+                        shares_urn_to_records[post_urn] = shares
+                        logging.info(shares)
 
-                except LinkedInClientException:
-                    logging.error(f'Failed to get shares for post no: ({post_urn})')
+                    except LinkedInClientException:
+                        logging.error(f'Failed to get shares for post no: ({post_urn})')
+                else:
+                    logging.info(f'Wrong urn: {post_urn}')
 
         shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
                                                     table_name="shares",
