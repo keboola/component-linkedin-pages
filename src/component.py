@@ -222,26 +222,20 @@ class LinkedInPagesExtractor(ComponentBase):
                     shares = self.client.get_shares_on_post(organization_urn=org_urn,
                                                             post_urn=post_urn)
                     shares_urn_to_records[post_urn] = shares
-                    logging.info(shares)
+                    logging.info(f'Shares response type: {type(shares)}')
+                    logging.info(f'Shares response: {shares}')
 
                 except LinkedInClientException:
                     logging.error(f'Failed to get shares for post no: ({post_urn})')
+
+        logging.info(f'Shares len: {len(shares_urn_to_records)}')
+        logging.info(f'Shares : {shares_urn_to_records}')
 
         shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
                                                     table_name="shares",
                                                     primary_key=["URN"])
 
-        comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
-        comments_table = create_posts_subobject_table(urn_to_records_dict=comments_urn_to_records,
-                                                      table_name="comments",
-                                                      primary_key=["id"])
-
-        likes_urn_to_records = {urn: self.client.get_likes_on_post(urn) for urn in posts_urns}
-        likes_table = create_posts_subobject_table(urn_to_records_dict=likes_urn_to_records,
-                                                   table_name="likes",
-                                                   primary_key=["URN"])
-
-        return [posts_table, comments_table, likes_table, shares_table]
+        return [posts_table, shares_table]
 
     def get_organizations_table(self, organization_urns: Iterable[URN]) -> list[Table]:
         organization_records = (
