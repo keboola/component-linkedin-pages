@@ -216,7 +216,7 @@ class LinkedInPagesExtractor(ComponentBase):
             posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
                 processed_record["id"].split(':')[-1] for processed_record in posts_records)
 
-            for post_urn in posts_urns[:20]:
+            for post_urn in posts_urns[:4]:
                 logging.info(type(post_urn))
                 if post_urn.isdigit():
                     try:

@@ -246,7 +246,7 @@ class LinkedInClient(HttpClient):
                            post_urn: URN,
                            start: Optional[int] = None,
                            count: int = DEFAULT_PAGE_SIZE,
-                           organization_urn: Optional[str] = None):
+                           organization_urn=None):
 
         url = ENDPOINT_ORG_SHARE_STATS
         params = {"q": "organizationalEntity", "organizationalEntity": organization_urn, "ugcPosts": post_urn}
