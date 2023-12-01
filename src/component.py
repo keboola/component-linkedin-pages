@@ -217,7 +217,7 @@ class LinkedInPagesExtractor(ComponentBase):
             posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
                 URN.from_str(processed_record["id"]) for processed_record in posts_records)
 
-            for post_urn in posts_urns[:4]:
+            for post_urn in posts_urns:
                 logging.info(f'Post urn: {post_urn}')
 
                 try:
@@ -227,8 +227,8 @@ class LinkedInPagesExtractor(ComponentBase):
                     logging.info(f'Shares response type: {type(shares)}')
                     logging.info(f'Shares response: {shares}')
 
-                except LinkedInClientException:
-                    logging.error(f'Failed to get shares for post no: ({post_urn})')
+                except LinkedInClientException as client_exc:
+                    raise UserException(client_exc) from client_exc
 
         logging.info(f'Shares len: {len(shares_urn_to_records)}')
         logging.info(f'Shares : {shares_urn_to_records}')
