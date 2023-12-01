@@ -247,7 +247,7 @@ class LinkedInClient(HttpClient):
                            organization_urn=None):
 
         url = ENDPOINT_ORG_SHARE_STATS
-        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn, "ugcPosts": post_urn}
+        params = {"q": "organizationalEntity", "organizationalEntity": organization_urn, "ugcPosts": str(post_urn)}
         logging.info(params)
         logging.info(f'Post urn: {post_urn}')
         return self.get(endpoint_path=url, params=params)
