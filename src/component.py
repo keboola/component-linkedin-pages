@@ -227,10 +227,9 @@ class LinkedInPagesExtractor(ComponentBase):
             # posts_urns = list(  # Keeping the posts URNs in memory here, may cause problems if number of posts is high
             #     URN.from_str(processed_record["id"]) for processed_record in posts_records)
 
-            posts_urns = [URN(entity_type="post", id=int(id)) for processed_record in posts_records]
+            posts_urns = [URN(entity_type="post", id=int(post["id"])) for post in posts_records]
 
             for post_urn in posts_urns:
-                post_urn = str(post_urn)
                 logging.info(f'Post urn type: {type(post_urn)}')
                 logging.info(f'Post urn: {post_urn}')
 
