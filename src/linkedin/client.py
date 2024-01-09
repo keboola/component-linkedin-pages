@@ -252,7 +252,7 @@ class LinkedInClient(HttpClient):
                   "ugcPosts": str(post_urn)}
 
         logging.info(params)
-        logging.info(f'Post urn: {post_urn}')
+        logging.info(f'Get params: {params}')
         return self.get(endpoint_path=url, params=params)
 
     def get_social_action_summary_on_post(self, post_urn: URN):

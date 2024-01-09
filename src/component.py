@@ -227,14 +227,13 @@ class LinkedInPagesExtractor(ComponentBase):
                     shares = self.client.get_shares_on_post(organization_urn=org_urn,
                                                             post_urn=post_urn)
                     shares_urn_to_records[post_urn] = shares
-                    logging.info(f'Shares response type: {type(shares)}')
                     logging.info(f'Shares response: {shares}')
 
                 except LinkedInClientException as client_exc:
                     raise UserException(client_exc) from client_exc
 
-        logging.info(f'Shares len: {len(shares_urn_to_records)}')
-        logging.info(f'Shares : {shares_urn_to_records}')
+        logging.info(f'Shares final len: {len(shares_urn_to_records)}')
+        logging.info(f'Shares final: {shares_urn_to_records}')
 
         shares_table = create_posts_subobject_table(urn_to_records_dict=shares_urn_to_records,
                                                     table_name="shares",
