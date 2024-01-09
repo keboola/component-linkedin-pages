@@ -219,6 +219,9 @@ class LinkedInPagesExtractor(ComponentBase):
 
             posts_urns = [URN(entity_type="post", id=int(post["id"])) for post in posts_records]
 
+            logging.info(f'Post urns type: {type(posts_urns)}')
+            logging.info(f'Post urns: {posts_urns}')
+
             for post_urn in posts_urns:
                 logging.info(f'Post urn type: {type(post_urn)}')
                 logging.info(f'Post urn: {post_urn}')
