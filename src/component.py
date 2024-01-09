@@ -207,25 +207,15 @@ class LinkedInPagesExtractor(ComponentBase):
         if posts_table.is_empty:
             logging.warning("No posts found for any available/specified organization.")
         posts_table.save_as_csv_with_manifest(self, incremental=self.incremental, include_csv_header=self.debug)
-        posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
-            URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
-        logging.info(f'Post urn type 1 : {type(posts_urns[0])}')
-        logging.info(f'Post urn 1: {posts_urns[0]}')
 
         shares_urn_to_records = {}
 
         for org_urn in organization_urns:
-            logging.info(f'Org urn type: {type(org_urn)}')
-            logging.info(f'Org urn: {org_urn}')
             posts_records = self.client.get_posts_by_author(org_urn, is_dsc=True)
-            logging.info(f'Posts records type: {type(posts_records)}')
 
             for x in posts_records:
                 logging.info(f'Posts records type: {type(x)}')
                 logging.info(f'Posts records: {x}')
-
-            # posts_urns = list(  # Keeping the posts URNs in memory here, may cause problems if number of posts is high
-            #     URN.from_str(processed_record["id"]) for processed_record in posts_records)
 
             posts_urns = [URN(entity_type="post", id=int(post["id"])) for post in posts_records]
 
