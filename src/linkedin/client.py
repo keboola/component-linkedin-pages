@@ -249,7 +249,7 @@ class LinkedInClient(HttpClient):
         url = ENDPOINT_ORG_SHARE_STATS
         params = {"q": "organizationalEntity",
                   "organizationalEntity": organization_urn,
-                  "ugcPosts": str(post_urn)}
+                  "shares": str(post_urn)}
 
         logging.info(params)
         logging.info(f'Get params: {params}')
