@@ -214,8 +214,10 @@ class LinkedInPagesExtractor(ComponentBase):
             posts_records = self.client.get_posts_by_author(org_urn, is_dsc=True)
 
             for x in posts_records:
-                logging.info(f'Posts records type: {type(x)}')
+                logging.info(f'Posts records id: {x["id"]}')
                 logging.info(f'Posts records: {x}')
+
+            logging.info('Ready')
 
             posts_urns = [URN(entity_type="post", id=int(post["id"])) for post in posts_records]
 
