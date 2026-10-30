@@ -106,6 +106,8 @@ Data about posts, their comments, and their likes are extracted as tables called
 
 The primary key is composed of only the column `URN` in case of `likes`, or the column `id` in case of `posts` and `comments`.
 
+The set of output columns is stable between runs: the `posts` table always contains the optional Posts API fields (e.g. `content_poll_*`, `content_carousel_cards`, `content_article_*`), and every table keeps the columns it had in previous runs of the configuration row (remembered in the state file). A column whose field is not present in the current batch of data is written empty instead of being left out, so the load into an existing Storage table does not fail. Resetting the state of the row makes it forget the remembered columns.
+
 ### Enumerated types
 All Enumerated types' values for Countries, Functions, Industries, Regions and Seniorities are extracted as a tables called `countries`, `functions`, `industries`, `regions` and `seniorities` that contain fields needed to make sense of the pertinent dimension slicing in Lifetime Statistics tables. See the [appropriate documentation pages](https://learn.microsoft.com/en-us/linkedin/shared/references/v2/standardized-data?context=linkedin%2Fmarketing%2Fcontext&view=li-lms-2022-08) for more info.
 
