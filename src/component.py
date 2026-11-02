@@ -31,6 +31,22 @@ REQUIRED_IMAGE_PARS = []
 
 # State keys:
 KEY_LAST_RUN_DATETIME = "last_run_downloaded_data_up_to_datetime"
+KEY_OUTPUT_TABLE_COLUMNS = "output_table_columns"
+
+# Optional fields of the Posts API that are present only in some posts. They are always written to the posts table,
+# so that a run without e.g. poll or carousel posts does not drop columns already present in the Storage table.
+POSTS_TABLE_KNOWN_COLUMNS = [
+    "id", "author", "commentary", "visibility", "lifecycleState", "lifecycleStateInfo_isEditedByAuthor",
+    "createdAt", "publishedAt", "lastModifiedAt", "isReshareDisabledByAuthor", "contentLandingPage",
+    "contentCallToActionLabel", "distribution_feedDistribution", "distribution_targetEntities",
+    "distribution_thirdPartyDistributionChannels", "adContext_dscStatus", "adContext_dscName", "adContext_dscAdType",
+    "adContext_isDsc", "adContext_dscAdAccount", "reshareContext_parent", "reshareContext_root", "content_media_id",
+    "content_media_title", "content_media_altText", "content_article_title", "content_article_description",
+    "content_article_source", "content_article_thumbnail", "content_article_thumbnailAltText",
+    "content_multiImage_images", "content_carousel_cards", "content_poll_question", "content_poll_options",
+    "content_poll_uniqueVotersCount", "content_poll_settings_duration", "content_poll_settings_voteSelectionType",
+    "content_poll_settings_isVoterVisibleToAuthor"]
+KNOWN_COLUMNS_BY_TABLE = {"posts": POSTS_TABLE_KNOWN_COLUMNS}
 
 
 # Row config enums:
@@ -132,9 +148,22 @@ class LinkedInPagesExtractor(ComponentBase):
             raise ValueError(f"Invalid extraction target: {self.extraction_target}")
 
         for table in output_tables:
-            table.save_as_csv_with_manifest(component=self, incremental=self.incremental, include_csv_header=self.debug)
+            self.save_table(table)
         if self.tmp_state:
             self.write_state_file(self.tmp_state)
+
+    def save_table(self, table: Table):
+        """
+        Saves the table with all columns it had in previous runs (and the known optional columns),
+        so that columns missing in the current batch of data are written empty instead of being dropped.
+        """
+        columns_by_table: dict = self.tmp_state.get(KEY_OUTPUT_TABLE_COLUMNS, {})
+        known_columns = KNOWN_COLUMNS_BY_TABLE.get(table.name, []) + columns_by_table.get(table.name, [])
+        table.save_as_csv_with_manifest(component=self, incremental=self.incremental, include_csv_header=self.debug,
+                                        known_columns=known_columns)
+        if table.is_saved:
+            columns_by_table[table.name] = list(table.columns)
+            self.tmp_state[KEY_OUTPUT_TABLE_COLUMNS] = columns_by_table
 
     def get_organization_urns(self, organization_ids: Set[str]):
         if organization_ids:
@@ -205,7 +234,7 @@ class LinkedInPagesExtractor(ComponentBase):
         posts_table = create_table(records=posts_records, table_name="posts", primary_key=["id"])
         if posts_table.is_empty:
             logging.warning("No posts found for any available/specified organization.")
-        posts_table.save_as_csv_with_manifest(self, incremental=self.incremental, include_csv_header=self.debug)
+        self.save_table(posts_table)
         posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
             URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
 

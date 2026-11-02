@@ -40,6 +40,10 @@ class Table:
             return False
 
     @property
+    def is_saved(self):
+        return self._saved
+
+    @property
     def is_empty(self):
         if self._is_empty is None:
             self._is_empty = self._is_empty_internal()
@@ -49,7 +53,8 @@ class Table:
                                   component: ComponentBase,
                                   incremental: bool,
                                   include_csv_header: bool = False,
-                                  overwrite=False):
+                                  overwrite=False,
+                                  known_columns: Sequence[str] = ()):
         if self._saved and not overwrite:
             logging.debug(f"Table already saved, not overwriting. Table: {self}")
             return
@@ -58,10 +63,14 @@ class Table:
                             f" nothing will be loaded into table '{self.name}'.")
             return
 
+        columns = list(self.columns)
+        for column in known_columns:
+            if column not in columns:
+                columns.append(column)
         table_def = component.create_out_table_definition(name=f"{self.name}.csv",
                                                           is_sliced=False,
                                                           primary_key=self.primary_key,
-                                                          columns=self.columns,
+                                                          columns=columns,
                                                           incremental=incremental,
                                                           table_metadata=self.metadata,
                                                           delete_where=self.delete_where_spec)
