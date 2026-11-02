@@ -46,8 +46,8 @@ jobs:
             branch_name=${{ github.ref_name }}
             echo "branch_name=$branch_name" | tee -a $GITHUB_OUTPUT
           else
-            raw=$(git branch -r --contains ${{ github.ref }})
-            branch="$(echo ${raw//origin\//} | tr -d '\n')"
+            # skip the "origin/HEAD -> origin/main" alias line, otherwise branch_name becomes "HEAD -> main main"
+            branch=$(git branch -r --contains ${{ github.ref }} | grep -v ' -> ' | sed 's|^ *origin/||' | xargs)
             echo "branch_name=$branch" | tee -a $GITHUB_OUTPUT
           fi
 
