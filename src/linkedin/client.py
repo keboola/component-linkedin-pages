@@ -1,6 +1,6 @@
 from functools import wraps
 import logging
-from typing import Callable, Dict, Iterator, List, Optional, ParamSpec
+from typing import Callable, Dict, Iterator, List, Optional, ParamSpec, Sequence
 
 import requests
 from urllib.parse import quote
@@ -21,6 +21,9 @@ ENDPOINT_ORG_FOLLOWER_STATS = "organizationalEntityFollowerStatistics"
 ENDPOINT_ORG_SHARE_STATS = "organizationalEntityShareStatistics"
 
 ENDPOINT_POSTS = "posts"
+# Post URN entity type to the share statistics query parameter listing posts of that type:
+POST_STATS_LIST_PARAMS = {"share": "shares", "ugcPost": "ugcPosts"}
+POST_STATS_BATCH_SIZE = 20
 ENDPOINT_SOCIAL_ACTIONS = "socialActions"
 ENDPOINT_REACTIONS = "reactions"
 
@@ -221,6 +224,21 @@ class LinkedInClient(HttpClient):
         else:
             url = ENDPOINT_ORG_SHARE_STATS
         return self._handle_pagination(endpoint_path=url, count=count, start=start, params=params)
+
+    def get_share_statistics_for_posts(self, organization_urn: str | URN, post_urns: Sequence[URN]) -> Iterator[Dict]:
+        """
+        Yields lifetime share statistics of specific posts (shares or UGC posts) of the organization.
+        The API does not support time-bound statistics for specific posts and returns no element for posts
+        without any activity.
+        """
+        params = {"q": "organizationalEntity", "organizationalEntity": str(organization_urn)}
+        for entity_type, list_param in POST_STATS_LIST_PARAMS.items():
+            urns = [urn for urn in post_urns if urn.entity_type == entity_type]
+            for i in range(0, len(urns), POST_STATS_BATCH_SIZE):
+                urn_list = ",".join(quote(str(urn)) for urn in urns[i:i + POST_STATS_BATCH_SIZE])
+                # The List() must not be URL encoded, so it is a part of the path instead of the params.
+                url = f"{ENDPOINT_ORG_SHARE_STATS}?{list_param}=List({urn_list})"
+                yield from self.get(endpoint_path=url, params=params.copy())["elements"]
 
     def get_post_by_urn(self, post_urn: URN):
         url = f"{ENDPOINT_POSTS}/{quote(str(post_urn))}"
