@@ -70,6 +70,19 @@
         }
       }
     },
+    "post_statistics": {
+      "type": "boolean",
+      "format": "checkbox",
+      "title": "Download Post Statistics",
+      "default": false,
+      "description": "Also download lifetime statistics of each post (impressions, unique impressions, clicks, likes, comments, shares, engagement rate) into the table post_statistics. Each run adds a snapshot dated by the run day, so with incremental load you can compute daily changes. The API returns organic statistics only, for posts from the last 12 months.",
+      "options": {
+        "dependencies": {
+          "endpoints": "posts"
+        }
+      },
+      "propertyOrder": 30
+    },
     "destination": {
       "title": "Destination",
       "type": "object",

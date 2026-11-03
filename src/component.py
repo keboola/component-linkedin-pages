@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
 from enum import Enum, unique
 from itertools import chain
@@ -25,6 +26,7 @@ KEY_EXTRACTION_TARGET = "endpoints"
 KEY_SYNC_OPTIONS = "sync_options"
 KEY_DESTINATION = "destination"
 KEY_LOAD_TYPE = "load_type"
+KEY_POST_STATISTICS = "post_statistics"
 
 REQUIRED_PARAMETERS = [KEY_EXTRACTION_TARGET, KEY_DESTINATION]
 REQUIRED_IMAGE_PARS = []
@@ -46,7 +48,10 @@ POSTS_TABLE_KNOWN_COLUMNS = [
     "content_multiImage_images", "content_carousel_cards", "content_poll_question", "content_poll_options",
     "content_poll_uniqueVotersCount", "content_poll_settings_duration", "content_poll_settings_voteSelectionType",
     "content_poll_settings_isVoterVisibleToAuthor"]
-KNOWN_COLUMNS_BY_TABLE = {"posts": POSTS_TABLE_KNOWN_COLUMNS}
+POST_STATISTICS_TABLE_COLUMNS = [
+    "post_urn", "snapshot_date", "organization_urn", "impressionCount", "uniqueImpressionsCount", "clickCount",
+    "likeCount", "commentCount", "shareCount", "engagement"]
+KNOWN_COLUMNS_BY_TABLE = {"posts": POSTS_TABLE_KNOWN_COLUMNS, "post_statistics": POST_STATISTICS_TABLE_COLUMNS}
 
 
 # Row config enums:
@@ -110,6 +115,7 @@ class LinkedInPagesExtractor(ComponentBase):
         time_range: Optional[dict] = params.get(KEY_SYNC_OPTIONS)
         self.incremental = LoadType(params[KEY_DESTINATION][KEY_LOAD_TYPE]) is LoadType.INCREMENTAL
         self.debug = bool(params.get(KEY_DEBUG))
+        self.post_statistics = bool(params.get(KEY_POST_STATISTICS))
 
         access_token = self.get_access_token()
         self.client = LinkedInClient(access_token)
@@ -235,8 +241,10 @@ class LinkedInPagesExtractor(ComponentBase):
         if posts_table.is_empty:
             logging.warning("No posts found for any available/specified organization.")
         self.save_table(posts_table)
-        posts_urns = list(  # Keeping the posts URNs in memory here - may cause problems if number of posts is high
-            URN.from_str(processed_record["id"]) for processed_record in posts_table.get_refreshed_records_iterator())
+        # Keeping the posts URNs in memory here - may cause problems if number of posts is high
+        posts_authors = {URN.from_str(processed_record["id"]): processed_record.get("author")
+                         for processed_record in posts_table.get_refreshed_records_iterator()}
+        posts_urns = list(posts_authors)
 
         comments_urn_to_records = {urn: self.client.get_comments_on_post(urn) for urn in posts_urns}
         comments_table = create_posts_subobject_table(urn_to_records_dict=comments_urn_to_records,
@@ -248,7 +256,34 @@ class LinkedInPagesExtractor(ComponentBase):
                                                    table_name="likes",
                                                    primary_key=["URN"])
 
-        return [posts_table, comments_table, likes_table]
+        tables = [posts_table, comments_table, likes_table]
+        if self.post_statistics:
+            tables.append(self.get_post_statistics_table(posts_authors))
+        return tables
+
+    def get_post_statistics_table(self, posts_authors: dict[URN, str]) -> Table:
+        """
+        Lifetime statistics of each post as of today. With incremental load, the table keeps one snapshot
+        per post and day, so daily changes can be computed from consecutive snapshots.
+        """
+        snapshot_date = datetime.now(timezone.utc).date().isoformat()
+        post_urns_by_author = defaultdict(list)
+        for post_urn, author_urn in posts_authors.items():
+            if author_urn:
+                post_urns_by_author[author_urn].append(post_urn)
+
+        def records():
+            try:
+                for author_urn, post_urns in post_urns_by_author.items():
+                    for element in self.client.get_share_statistics_for_posts(author_urn, post_urns):
+                        yield {"post_urn": element.get("share") or element.get("ugcPost"),
+                               "snapshot_date": snapshot_date,
+                               "organization_urn": element.get("organizationalEntity"),
+                               **element.get("totalShareStatistics", {})}
+            except LinkedInClientException as client_exc:
+                raise UserException(f"Failed to download post statistics: {client_exc}") from client_exc
+
+        return create_table(records=records(), table_name="post_statistics", primary_key=["post_urn", "snapshot_date"])
 
     def get_organizations_table(self, organization_urns: Iterable[URN]) -> list[Table]:
         organization_records = (
